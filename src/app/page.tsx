@@ -6,10 +6,8 @@ import Footer from "@/components/school/Footer";
 import HeroSection from "@/components/school/HeroSection";
 import QuickCards from "@/components/school/QuickCards";
 import AboutSection from "@/components/school/AboutSection";
-import WhyChooseSection from "@/components/school/WhyChooseSection";
 import FacilitiesSection from "@/components/school/FacilitiesSection";
 import NoticesSection from "@/components/school/NoticesSection";
-import TestimonialsSection from "@/components/school/TestimonialsSection";
 import GallerySection from "@/components/school/GallerySection";
 import TeachersPage from "@/components/school/TeachersPage";
 import TeacherDetailPage from "@/components/school/TeacherDetailPage";
@@ -68,11 +66,9 @@ export default function Home() {
               <HeroSection />
               <QuickCards />
               <AboutSection />
-              <WhyChooseSection />
               <FacilitiesSection />
               <GallerySection />
               <NoticesSection />
-              <TestimonialsSection />
             </>
           )}
           {currentView === "teachers" && (
