@@ -132,10 +132,13 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Send auto-reply email (non-blocking — don't fail the enquiry if email fails)
-    sendAutoReply(name, email, className || "Not specified").catch((err) => {
-      console.error("Background email send failed:", err);
-    });
+    // Send auto-reply email (await so Vercel serverless stays alive to complete it)
+    // Don't fail the enquiry if email fails — just log the error
+    try {
+      await sendAutoReply(name, email, className || "Not specified");
+    } catch (emailError) {
+      console.error("Auto-reply email failed:", emailError);
+    }
 
     return NextResponse.json(enquiry, { status: 201 });
   } catch (error) {
