@@ -3,7 +3,9 @@ import { put } from "@vercel/blob";
 import sharp from "sharp";
 
 // POST upload image with quality preservation
-// Uses Vercel Blob for persistent storage (works on serverless)
+// On Vercel: uses Vercel Blob storage (if BLOB_READ_WRITE_TOKEN is set)
+// On local dev: saves to public/gallery/ directory
+// Fallback: returns base64 data URL
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -76,22 +78,26 @@ export async function POST(request: NextRequest) {
     const randomSuffix = Math.random().toString(36).substring(2, 8);
     const filename = `gallery/${timestamp}-${randomSuffix}.${ext}`;
 
-    // Check if BLOB_READ_WRITE_TOKEN is available (Vercel production)
-    // If not, fall back to local filesystem storage (development)
+    // Strategy 1: Vercel Blob (production on Vercel)
     if (process.env.BLOB_READ_WRITE_TOKEN) {
-      // Upload to Vercel Blob
-      const blob = await put(filename, processedBuffer, {
-        contentType,
-        access: "public",
-      });
+      try {
+        const blob = await put(filename, processedBuffer, {
+          contentType,
+          access: "public",
+        });
+        return NextResponse.json({
+          url: blob.url,
+          filename: filename,
+          message: "Image uploaded to Vercel Blob",
+        });
+      } catch (blobError) {
+        console.error("Blob upload failed, falling back:", blobError);
+        // Fall through to local storage
+      }
+    }
 
-      return NextResponse.json({
-        url: blob.url,
-        filename: filename,
-        message: "Image uploaded successfully",
-      });
-    } else {
-      // Development fallback: save to public/gallery/ directory
+    // Strategy 2: Local filesystem (development)
+    try {
       const { writeFile, mkdir } = await import("fs/promises");
       const path = await import("path");
 
@@ -105,9 +111,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         url: `/gallery/${localFilename}`,
         filename: localFilename,
-        message: "Image uploaded successfully (local)",
+        message: "Image uploaded locally",
       });
+    } catch (fsError) {
+      console.error("Local storage failed:", fsError);
+      // Fall through to base64
     }
+
+    // Strategy 3: Base64 data URL (universal fallback - works on any platform)
+    const base64 = processedBuffer.toString("base64");
+    const dataUrl = `data:${contentType};base64,${base64}`;
+
+    return NextResponse.json({
+      url: dataUrl,
+      filename: filename.replace("gallery/", ""),
+      message: "Image stored as base64 (cloud storage not configured)",
+    });
   } catch (error) {
     console.error("Error uploading image:", error);
     return NextResponse.json(
