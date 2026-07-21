@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { put } from "@vercel/blob";
 import sharp from "sharp";
 
 // POST upload image with quality preservation
+// Uses Vercel Blob for persistent storage (works on serverless)
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -34,58 +34,80 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Generate unique filename
-    const ext = path.extname(file.name) || ".jpg";
-    const timestamp = Date.now();
-    const randomSuffix = Math.random().toString(36).substring(2, 8);
-    const filename = `${timestamp}-${randomSuffix}${ext}`;
-
-    // Ensure gallery directory exists
-    const galleryDir = path.join(process.cwd(), "public", "gallery");
-    await mkdir(galleryDir, { recursive: true });
-
-    const filePath = path.join(galleryDir, filename);
-
     // Process image with sharp - keep quality high
-    // For JPEG: quality 90 (high quality)
-    // For PNG: use default lossless compression
-    // Resize if too large (max 2000px on longest side for web, but keep quality)
+    let processedBuffer: Buffer;
+    let contentType: string = file.type;
+
     if (file.type === "image/jpeg" || file.type === "image/jpg") {
-      await sharp(buffer)
+      processedBuffer = await sharp(buffer)
         .resize(2000, 2000, {
           fit: "inside",
           withoutEnlargement: true,
         })
         .jpeg({ quality: 90, mozjpeg: true })
-        .toFile(filePath);
+        .toBuffer();
+      contentType = "image/jpeg";
     } else if (file.type === "image/png") {
-      await sharp(buffer)
+      processedBuffer = await sharp(buffer)
         .resize(2000, 2000, {
           fit: "inside",
           withoutEnlargement: true,
         })
-        .png({ compressionLevel: 6, quality: 90 })
-        .toFile(filePath);
+        .png({ compressionLevel: 6 })
+        .toBuffer();
+      contentType = "image/png";
     } else if (file.type === "image/webp") {
-      await sharp(buffer)
+      processedBuffer = await sharp(buffer)
         .resize(2000, 2000, {
           fit: "inside",
           withoutEnlargement: true,
         })
         .webp({ quality: 90 })
-        .toFile(filePath);
+        .toBuffer();
+      contentType = "image/webp";
     } else {
-      // For GIF and others, just save directly
-      await writeFile(filePath, buffer);
+      // For GIF, just pass through
+      processedBuffer = buffer;
     }
 
-    const imageUrl = `/gallery/${filename}`;
+    // Generate unique filename
+    const ext = file.name.split('.').pop() || "jpg";
+    const timestamp = Date.now();
+    const randomSuffix = Math.random().toString(36).substring(2, 8);
+    const filename = `gallery/${timestamp}-${randomSuffix}.${ext}`;
 
-    return NextResponse.json({
-      url: imageUrl,
-      filename,
-      message: "Image uploaded successfully",
-    });
+    // Check if BLOB_READ_WRITE_TOKEN is available (Vercel production)
+    // If not, fall back to local filesystem storage (development)
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      // Upload to Vercel Blob
+      const blob = await put(filename, processedBuffer, {
+        contentType,
+        access: "public",
+      });
+
+      return NextResponse.json({
+        url: blob.url,
+        filename: filename,
+        message: "Image uploaded successfully",
+      });
+    } else {
+      // Development fallback: save to public/gallery/ directory
+      const { writeFile, mkdir } = await import("fs/promises");
+      const path = await import("path");
+
+      const galleryDir = path.join(process.cwd(), "public", "gallery");
+      await mkdir(galleryDir, { recursive: true });
+
+      const localFilename = filename.replace("gallery/", "");
+      const filePath = path.join(galleryDir, localFilename);
+      await writeFile(filePath, processedBuffer);
+
+      return NextResponse.json({
+        url: `/gallery/${localFilename}`,
+        filename: localFilename,
+        message: "Image uploaded successfully (local)",
+      });
+    }
   } catch (error) {
     console.error("Error uploading image:", error);
     return NextResponse.json(
