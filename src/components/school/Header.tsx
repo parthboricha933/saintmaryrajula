@@ -2,18 +2,23 @@
 
 import { useState, useEffect } from "react";
 import { SCHOOL } from "@/data/school-data";
-import { Menu, X, GraduationCap, Phone } from "lucide-react";
+import { Menu, X, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+interface HeaderProps {
+  onNavigate: (view: string) => void;
+  currentView: string;
+}
+
 const navItems = [
-  { label: "Home", href: "#home" },
-  { label: "About", href: "#about" },
-  { label: "Teachers", href: "#teachers" },
-  { label: "Gallery", href: "#gallery" },
-  { label: "Contact", href: "#contact" },
+  { label: "Home", href: "home" },
+  { label: "About", href: "about" },
+  { label: "Teachers", href: "teachers" },
+  { label: "Gallery", href: "gallery" },
+  { label: "Contact", href: "contact" },
 ];
 
-export default function Header() {
+export default function Header({ onNavigate, currentView }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -27,7 +32,25 @@ export default function Header() {
 
   const handleNavClick = (href: string) => {
     setIsMobileMenuOpen(false);
-    const el = document.querySelector(href);
+
+    // Teachers is a separate view
+    if (href === "teachers") {
+      onNavigate("teachers");
+      return;
+    }
+
+    // If we're on a different view, go home first
+    if (currentView !== "home") {
+      onNavigate("home");
+      setTimeout(() => {
+        const el = document.querySelector(`#${href}`);
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+      }, 200);
+      return;
+    }
+
+    // On home view, just scroll to section
+    const el = document.querySelector(`#${href}`);
     if (el) {
       el.scrollIntoView({ behavior: "smooth" });
     }
@@ -63,7 +86,10 @@ export default function Header() {
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
-          <div className="flex items-center gap-3">
+          <div
+            className="flex items-center gap-3 cursor-pointer"
+            onClick={() => handleNavClick("home")}
+          >
             <img
               src="/school-logo.png"
               alt="Saint Mary School Logo"
@@ -85,14 +111,18 @@ export default function Header() {
               <button
                 key={item.label}
                 onClick={() => handleNavClick(item.href)}
-                className="px-4 py-2 text-sm font-medium text-navy-light hover:text-gold transition-colors rounded-lg hover:bg-gold/5"
+                className={`px-4 py-2 text-sm font-medium transition-colors rounded-lg ${
+                  currentView === "teachers" && item.href === "teachers"
+                    ? "text-gold bg-gold/10"
+                    : "text-navy-light hover:text-gold hover:bg-gold/5"
+                }`}
               >
                 {item.label}
               </button>
             ))}
             <Button
               className="ml-4 bg-gold hover:bg-gold-dark text-white font-semibold px-6 rounded-lg shadow-md hover:shadow-lg transition-all"
-              onClick={() => handleNavClick("#contact")}
+              onClick={() => handleNavClick("contact")}
             >
               Admission Open
             </Button>
@@ -121,7 +151,11 @@ export default function Header() {
               <button
                 key={item.label}
                 onClick={() => handleNavClick(item.href)}
-                className="block w-full text-left px-4 py-3 text-navy-light font-medium hover:bg-gold/5 hover:text-gold rounded-lg transition-colors"
+                className={`block w-full text-left px-4 py-3 font-medium rounded-lg transition-colors ${
+                  currentView === "teachers" && item.href === "teachers"
+                    ? "text-gold bg-gold/5"
+                    : "text-navy-light hover:bg-gold/5 hover:text-gold"
+                }`}
               >
                 {item.label}
               </button>
@@ -129,7 +163,7 @@ export default function Header() {
             <div className="pt-2">
               <Button
                 className="w-full bg-gold hover:bg-gold-dark text-white font-semibold rounded-lg"
-                onClick={() => handleNavClick("#contact")}
+                onClick={() => handleNavClick("contact")}
               >
                 Admission Open
               </Button>
