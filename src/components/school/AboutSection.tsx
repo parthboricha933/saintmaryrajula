@@ -29,7 +29,7 @@ export default function AboutSection() {
           >
             <div className="relative rounded-2xl overflow-hidden shadow-xl">
               <img
-                src="https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=800&auto=format&fit=crop"
+                src="/hero-school.jpg"
                 alt="Students at Saint Mary School"
                 className="w-full h-72 sm:h-80 lg:h-96 object-cover"
               />

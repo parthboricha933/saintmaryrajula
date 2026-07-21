@@ -14,8 +14,7 @@ export default function HeroSection() {
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage:
-            "url('https://images.unsplash.com/photo-1580582932707-520aed937b7b?q=80&w=1920&auto=format&fit=crop')",
+          backgroundImage: "url('/hero-school.jpg')",
         }}
       />
       <div className="absolute inset-0 bg-gradient-to-r from-navy-dark/90 via-navy/80 to-navy-dark/70" />
