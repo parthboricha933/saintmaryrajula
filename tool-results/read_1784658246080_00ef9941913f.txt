@@ -1,0 +1,971 @@
+     1→     1→"use client";
+     2→     2→
+     3→     3→import { useState, useEffect, useRef } from "react";
+     4→     4→import {
+     5→     5→  Bell,
+     6→     6→  Calendar,
+     7→     7→  Megaphone,
+     8→     8→  Plus,
+     9→     9→  Pencil,
+    10→    10→  Trash2,
+    11→    11→  Save,
+    12→    12→  X,
+    13→    13→  LogOut,
+    14→    14→  LayoutDashboard,
+    15→    15→  CheckCircle,
+    16→    16→  Camera,
+    17→    17→  Upload,
+    18→    18→  Image as ImageIcon,
+    19→    19→} from "lucide-react";
+    20→    20→import { Button } from "@/components/ui/button";
+    21→    21→
+    22→    22→type AdminUser = { id: string; email: string; name: string; role: string };
+    23→    23→
+    24→    24→type Notice = {
+    25→    25→  id: string;
+    26→    26→  title: string;
+    27→    27→  content: string;
+    28→    28→  category: string;
+    29→    29→  date: string;
+    30→    30→  active: boolean;
+    31→    31→};
+    32→    32→
+    33→    33→type SchoolEvent = {
+    34→    34→  id: string;
+    35→    35→  title: string;
+    36→    36→  description: string;
+    37→    37→  date: string;
+    38→    38→  endTime: string | null;
+    39→    39→  venue: string;
+    40→    40→  category: string;
+    41→    41→  active: boolean;
+    42→    42→};
+    43→    43→
+    44→    44→type Announcement = {
+    45→    45→  id: string;
+    46→    46→  title: string;
+    47→    47→  content: string;
+    48→    48→  priority: string;
+    49→    49→  active: boolean;
+    50→    50→  createdAt: string;
+    51→    51→};
+    52→    52→
+    53→    53→type GalleryImage = {
+    54→    54→  id: string;
+    55→    55→  title: string;
+    56→    56→  category: string;
+    57→    57→  imageUrl: string;
+    58→    58→  alt: string | null;
+    59→    59→  active: boolean;
+    60→    60→  order: number;
+    61→    61→  createdAt: string;
+    62→    62→};
+    63→    63→
+    64→    64→type AdminTab = "notices" | "events" | "announcements" | "gallery";
+    65→    65→
+    66→    66→const noticeCategories = ["General", "Academic", "Event", "Holiday"];
+    67→    67→const eventCategories = ["General", "Celebration", "Sports", "Academic", "Cultural"];
+    68→    68→const priorityOptions = ["normal", "high"];
+    69→    69→const galleryCategories = [
+    70→    70→  "Classrooms",
+    71→    71→  "Annual Function",
+    72→    72→  "Sports Day",
+    73→    73→  "Science Activities",
+    74→    74→  "Cultural Events",
+    75→    75→  "School Campus",
+    76→    76→  "Celebrations",
+    77→    77→];
+    78→    78→
+    79→    79→export default function AdminDashboard({
+    80→    80→  user,
+    81→    81→  onLogout,
+    82→    82→}: {
+    83→    83→  user: AdminUser;
+    84→    84→  onLogout: () => void;
+    85→    85→}) {
+    86→    86→  const [activeTab, setActiveTab] = useState<AdminTab>("notices");
+    87→    87→  const [notices, setNotices] = useState<Notice[]>([]);
+    88→    88→  const [events, setEvents] = useState<SchoolEvent[]>([]);
+    89→    89→  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+    90→    90→  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+    91→    91→  const [loading, setLoading] = useState(true);
+    92→    92→  const [editingItem, setEditingItem] = useState<string | null>(null);
+    93→    93→  const [isCreating, setIsCreating] = useState(false);
+    94→    94→  const [saveStatus, setSaveStatus] = useState<string | null>(null);
+    95→    95→  const [uploading, setUploading] = useState(false);
+    96→    96→
+    97→    97→  // Form state
+    98→    98→  const [form, setForm] = useState<Record<string, string>>({});
+    99→    99→  const fileInputRef = useRef<HTMLInputElement>(null);
+   100→   100→
+   101→   101→  const fetchData = async () => {
+   102→   102→    setLoading(true);
+   103→   103→    try {
+   104→   104→      const [nRes, eRes, aRes, gRes] = await Promise.all([
+   105→   105→        fetch("/api/notices"),
+   106→   106→        fetch("/api/events"),
+   107→   107→        fetch("/api/announcements"),
+   108→   108→        fetch("/api/gallery"),
+   109→   109→      ]);
+   110→   110→      setNotices(await nRes.json());
+   111→   111→      setEvents(await eRes.json());
+   112→   112→      setAnnouncements(await aRes.json());
+   113→   113→      setGalleryImages(await gRes.json());
+   114→   114→    } catch (err) {
+   115→   115→      console.error(err);
+   116→   116→    } finally {
+   117→   117→      setLoading(false);
+   118→   118→    }
+   119→   119→  };
+   120→   120→
+   121→   121→  useEffect(() => {
+   122→   122→    fetchData();
+   123→   123→  }, []);
+   124→   124→
+   125→   125→  const showStatus = (msg: string) => {
+   126→   126→    setSaveStatus(msg);
+   127→   127→    setTimeout(() => setSaveStatus(null), 3000);
+   128→   128→  };
+   129→   129→
+   130→   130→  // --- Notices CRUD ---
+   131→   131→  const saveNotice = async () => {
+   132→   132→    const payload = {
+   133→   133→      ...(editingItem ? { id: editingItem } : {}),
+   134→   134→      title: form.title || "",
+   135→   135→      content: form.content || "",
+   136→   136→      category: form.category || "General",
+   137→   137→      date: form.date || new Date().toISOString(),
+   138→   138→      active: form.active !== "false",
+   139→   139→    };
+   140→   140→
+   141→   141→    const res = await fetch("/api/notices", {
+   142→   142→      method: editingItem ? "PUT" : "POST",
+   143→   143→      headers: { "Content-Type": "application/json" },
+   144→   144→      body: JSON.stringify(payload),
+   145→   145→    });
+   146→   146→
+   147→   147→    if (res.ok) {
+   148→   148→      showStatus(editingItem ? "Notice updated!" : "Notice created!");
+   149→   149→      setEditingItem(null);
+   150→   150→      setIsCreating(false);
+   151→   151→      setForm({});
+   152→   152→      fetchData();
+   153→   153→    }
+   154→   154→  };
+   155→   155→
+   156→   156→  const deleteNotice = async (id: string) => {
+   157→   157→    if (!confirm("Are you sure you want to delete this notice?")) return;
+   158→   158→    const res = await fetch(`/api/notices?id=${id}`, { method: "DELETE" });
+   159→   159→    if (res.ok) {
+   160→   160→      showStatus("Notice deleted!");
+   161→   161→      fetchData();
+   162→   162→    }
+   163→   163→  };
+   164→   164→
+   165→   165→  // --- Events CRUD ---
+   166→   166→  const saveEvent = async () => {
+   167→   167→    const payload = {
+   168→   168→      ...(editingItem ? { id: editingItem } : {}),
+   169→   169→      title: form.title || "",
+   170→   170→      description: form.description || "",
+   171→   171→      date: form.date || new Date().toISOString(),
+   172→   172→      endTime: form.endTime || null,
+   173→   173→      venue: form.venue || "School Campus",
+   174→   174→      category: form.category || "General",
+   175→   175→      active: form.active !== "false",
+   176→   176→    };
+   177→   177→
+   178→   178→    const res = await fetch("/api/events", {
+   179→   179→      method: editingItem ? "PUT" : "POST",
+   180→   180→      headers: { "Content-Type": "application/json" },
+   181→   181→      body: JSON.stringify(payload),
+   182→   182→    });
+   183→   183→
+   184→   184→    if (res.ok) {
+   185→   185→      showStatus(editingItem ? "Event updated!" : "Event created!");
+   186→   186→      setEditingItem(null);
+   187→   187→      setIsCreating(false);
+   188→   188→      setForm({});
+   189→   189→      fetchData();
+   190→   190→    }
+   191→   191→  };
+   192→   192→
+   193→   193→  const deleteEvent = async (id: string) => {
+   194→   194→    if (!confirm("Are you sure you want to delete this event?")) return;
+   195→   195→    const res = await fetch(`/api/events?id=${id}`, { method: "DELETE" });
+   196→   196→    if (res.ok) {
+   197→   197→      showStatus("Event deleted!");
+   198→   198→      fetchData();
+   199→   199→    }
+   200→   200→  };
+   201→   201→
+   202→   202→  // --- Announcements CRUD ---
+   203→   203→  const saveAnnouncement = async () => {
+   204→   204→    const payload = {
+   205→   205→      ...(editingItem ? { id: editingItem } : {}),
+   206→   206→      title: form.title || "",
+   207→   207→      content: form.content || "",
+   208→   208→      priority: form.priority || "normal",
+   209→   209→      active: form.active !== "false",
+   210→   210→    };
+   211→   211→
+   212→   212→    const res = await fetch("/api/announcements", {
+   213→   213→      method: editingItem ? "PUT" : "POST",
+   214→   214→      headers: { "Content-Type": "application/json" },
+   215→   215→      body: JSON.stringify(payload),
+   216→   216→    });
+   217→   217→
+   218→   218→    if (res.ok) {
+   219→   219→      showStatus(editingItem ? "Announcement updated!" : "Announcement created!");
+   220→   220→      setEditingItem(null);
+   221→   221→      setIsCreating(false);
+   222→   222→      setForm({});
+   223→   223→      fetchData();
+   224→   224→    }
+   225→   225→  };
+   226→   226→
+   227→   227→  const deleteAnnouncement = async (id: string) => {
+   228→   228→    if (!confirm("Are you sure you want to delete this announcement?")) return;
+   229→   229→    const res = await fetch(`/api/announcements?id=${id}`, { method: "DELETE" });
+   230→   230→    if (res.ok) {
+   231→   231→      showStatus("Announcement deleted!");
+   232→   232→      fetchData();
+   233→   233→    }
+   234→   234→  };
+   235→   235→
+   236→   236→  // --- Gallery CRUD ---
+   237→   237→  const handleImageUpload = async (file: File): Promise<string | null> => {
+   238→   238→    setUploading(true);
+   239→   239→    try {
+   240→   240→      const formData = new FormData();
+   241→   241→      formData.append("file", file);
+   242→   242→      const res = await fetch("/api/upload", {
+   243→   243→        method: "POST",
+   244→   244→        body: formData,
+   245→   245→      });
+   246→   246→      if (res.ok) {
+   247→   247→        const data = await res.json();
+   248→   248→        return data.url;
+   249→   249→      } else {
+   250→   250→        const error = await res.json();
+   251→   251→        showStatus(error.error || "Upload failed!");
+   252→   252→        return null;
+   253→   253→      }
+   254→   254→    } catch (err) {
+   255→   255→      console.error(err);
+   256→   256→      showStatus("Upload failed!");
+   257→   257→      return null;
+   258→   258→    } finally {
+   259→   259→      setUploading(false);
+   260→   260→    }
+   261→   261→  };
+   262→   262→
+   263→   263→  const saveGalleryImage = async () => {
+   264→   264→    // If creating new, we need an image file
+   265→   265→    if (isCreating && !form.imageUrl) {
+   266→   266→      showStatus("Please select an image to upload!");
+   267→   267→      return;
+   268→   268→    }
+   269→   269→
+   270→   270→    let imageUrl = form.imageUrl || "";
+   271→   271→
+   272→   272→    // Handle file upload if a new file was selected
+   273→   273→    if (form.imageFile) {
+   274→   274→      const url = await handleImageUpload(form.imageFile as unknown as File);
+   275→   275→      if (!url) return;
+   276→   276→      imageUrl = url;
+   277→   277→    }
+   278→   278→
+   279→   279→    const payload = {
+   280→   280→      ...(editingItem ? { id: editingItem } : {}),
+   281→   281→      title: form.title || "",
+   282→   282→      category: form.category || "School Campus",
+   283→   283→      imageUrl,
+   284→   284→      alt: form.alt || form.title || "",
+   285→   285→      active: form.active !== "false",
+   286→   286→      order: form.order ? parseInt(form.order) : 0,
+   287→   287→    };
+   288→   288→
+   289→   289→    const res = await fetch("/api/gallery", {
+   290→   290→      method: editingItem ? "PUT" : "POST",
+   291→   291→      headers: { "Content-Type": "application/json" },
+   292→   292→      body: JSON.stringify(payload),
+   293→   293→    });
+   294→   294→
+   295→   295→    if (res.ok) {
+   296→   296→      showStatus(editingItem ? "Gallery image updated!" : "Gallery image added!");
+   297→   297→      setEditingItem(null);
+   298→   298→      setIsCreating(false);
+   299→   299→      setForm({});
+   300→   300→      fetchData();
+   301→   301→    }
+   302→   302→  };
+   303→   303→
+   304→   304→  const deleteGalleryImage = async (id: string) => {
+   305→   305→    if (!confirm("Are you sure you want to delete this gallery image?")) return;
+   306→   306→    const res = await fetch(`/api/gallery?id=${id}`, { method: "DELETE" });
+   307→   307→    if (res.ok) {
+   308→   308→      showStatus("Gallery image deleted!");
+   309→   309→      fetchData();
+   310→   310→    }
+   311→   311→  };
+   312→   312→
+   313→   313→  const startEdit = (item: Record<string, unknown>, type: AdminTab) => {
+   314→   314→    setEditingItem(item.id as string);
+   315→   315→    setIsCreating(false);
+   316→   316→    setActiveTab(type);
+   317→   317→    if (type === "notices") {
+   318→   318→      const n = item as Notice;
+   319→   319→      setForm({
+   320→   320→        title: n.title,
+   321→   321→        content: n.content,
+   322→   322→        category: n.category,
+   323→   323→        date: n.date ? new Date(n.date).toISOString().split("T")[0] : "",
+   324→   324→        active: String(n.active),
+   325→   325→      });
+   326→   326→    } else if (type === "events") {
+   327→   327→      const e = item as SchoolEvent;
+   328→   328→      setForm({
+   329→   329→        title: e.title,
+   330→   330→        description: e.description,
+   331→   331→        date: e.date ? new Date(e.date).toISOString().split("T")[0] + "T09:00" : "",
+   332→   332→        endTime: e.endTime ? new Date(e.endTime!).toISOString().split("T")[0] + "T12:00" : "",
+   333→   333→        venue: e.venue,
+   334→   334→        category: e.category,
+   335→   335→        active: String(e.active),
+   336→   336→      });
+   337→   337→    } else if (type === "gallery") {
+   338→   338→      const g = item as GalleryImage;
+   339→   339→      setForm({
+   340→   340→        title: g.title,
+   341→   341→        category: g.category,
+   342→   342→        imageUrl: g.imageUrl,
+   343→   343→        alt: g.alt || "",
+   344→   344→        active: String(g.active),
+   345→   345→        order: String(g.order),
+   346→   346→      });
+   347→   347→    } else {
+   348→   348→      const a = item as Announcement;
+   349→   349→      setForm({
+   350→   350→        title: a.title,
+   351→   351→        content: a.content,
+   352→   352→        priority: a.priority,
+   353→   353→        active: String(a.active),
+   354→   354→      });
+   355→   355→    }
+   356→   356→  };
+   357→   357→
+   358→   358→  const startCreate = (type: AdminTab) => {
+   359→   359→    setActiveTab(type);
+   360→   360→    setIsCreating(true);
+   361→   361→    setEditingItem(null);
+   362→   362→    setForm({ active: "true", category: type === "gallery" ? "School Campus" : "General", priority: "normal", venue: "School Campus" });
+   363→   363→  };
+   364→   364→
+   365→   365→  const cancelEdit = () => {
+   366→   366→    setEditingItem(null);
+   367→   367→    setIsCreating(false);
+   368→   368→    setForm({});
+   369→   369→  };
+   370→   370→
+   371→   371→  const tabs: { key: AdminTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+   372→   372→    { key: "notices", label: "Notices", icon: Bell },
+   373→   373→    { key: "events", label: "Events", icon: Calendar },
+   374→   374→    { key: "announcements", label: "Announcements", icon: Megaphone },
+   375→   375→    { key: "gallery", label: "Gallery", icon: Camera },
+   376→   376→  ];
+   377→   377→
+   378→   378→  return (
+   379→   379→    <div className="pt-28 sm:pt-32 pb-16 min-h-screen bg-secondary/30">
+   380→   380→      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+   381→   381→        {/* Header */}
+   382→   382→        <div className="flex items-center justify-between mb-6">
+   383→   383→          <div>
+   384→   384→            <h1 className="text-2xl sm:text-3xl font-bold text-navy flex items-center gap-2">
+   385→   385→              <LayoutDashboard className="w-7 h-7 text-gold" />
+   386→   386→              Admin Panel
+   387→   387→            </h1>
+   388→   388→            <p className="text-sm text-muted-foreground mt-1">
+   389→   389→              Welcome, {user.name || user.email}
+   390→   390→            </p>
+   391→   391→          </div>
+   392→   392→          <Button
+   393→   393→            variant="outline"
+   394→   394→            onClick={onLogout}
+   395→   395→            className="text-navy hover:text-red-600 hover:border-red-200"
+   396→   396→          >
+   397→   397→            <LogOut className="w-4 h-4 mr-2" />
+   398→   398→            Logout
+   399→   399→          </Button>
+   400→   400→        </div>
+   401→   401→
+   402→   402→        {/* Status message */}
+   403→   403→        {saveStatus && (
+   404→   404→          <div className="mb-4 bg-green-50 text-green-700 text-sm p-3 rounded-lg border border-green-200 flex items-center gap-2 animate-fade-in">
+   405→   405→            <CheckCircle className="w-4 h-4" />
+   406→   406→            {saveStatus}
+   407→   407→          </div>
+   408→   408→        )}
+   409→   409→
+   410→   410→        {/* Tab navigation */}
+   411→   411→        <div className="flex items-center gap-2 mb-6 overflow-x-auto">
+   412→   412→          {tabs.map((tab) => {
+   413→   413→            const Icon = tab.icon;
+   414→   414→            return (
+   415→   415→              <button
+   416→   416→                key={tab.key}
+   417→   417→                onClick={() => {
+   418→   418→                  setActiveTab(tab.key);
+   419→   419→                  cancelEdit();
+   420→   420→                }}
+   421→   421→                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+   422→   422→                  activeTab === tab.key
+   423→   423→                    ? "bg-navy text-white shadow-md"
+   424→   424→                    : "bg-white text-navy hover:bg-navy/5 border border-gray-100"
+   425→   425→                }`}
+   426→   426→              >
+   427→   427→                <Icon className="w-4 h-4" />
+   428→   428→                {tab.label}
+   429→   429→              </button>
+   430→   430→            );
+   431→   431→          })}
+   432→   432→        </div>
+   433→   433→
+   434→   434→        {loading ? (
+   435→   435→          <div className="text-center py-12">
+   436→   436→            <div className="w-8 h-8 border-2 border-navy border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+   437→   437→            <p className="text-muted-foreground text-sm">Loading data...</p>
+   438→   438→          </div>
+   439→   439→        ) : (
+   440→   440→          <>
+   441→   441→            {/* ====== NOTICES TAB ====== */}
+   442→   442→            {activeTab === "notices" && (
+   443→   443→              <div className="space-y-4 animate-fade-in">
+   444→   444→                <div className="flex items-center justify-between">
+   445→   445→                  <h2 className="text-lg font-semibold text-navy">Manage Notices</h2>
+   446→   446→                  <Button
+   447→   447→                    onClick={() => startCreate("notices")}
+   448→   448→                    className="bg-gold hover:bg-gold-dark text-white text-sm"
+   449→   449→                  >
+   450→   450→                    <Plus className="w-4 h-4 mr-1" /> Add Notice
+   451→   451→                  </Button>
+   452→   452→                </div>
+   453→   453→
+   454→   454→                {/* Create/Edit form */}
+   455→   455→                {(isCreating || editingItem) && activeTab === "notices" && (
+   456→   456→                  <div className="bg-white rounded-xl p-5 border border-gold/20 shadow-sm space-y-3">
+   457→   457→                    <h3 className="font-semibold text-navy text-sm">
+   458→   458→                      {editingItem ? "Edit Notice" : "New Notice"}
+   459→   459→                    </h3>
+   460→   460→                    <input
+   461→   461→                      type="text"
+   462→   462→                      placeholder="Title"
+   463→   463→                      value={form.title || ""}
+   464→   464→                      onChange={(e) => setForm({ ...form, title: e.target.value })}
+   465→   465→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   466→   466→                    />
+   467→   467→                    <textarea
+   468→   468→                      placeholder="Content"
+   469→   469→                      rows={3}
+   470→   470→                      value={form.content || ""}
+   471→   471→                      onChange={(e) => setForm({ ...form, content: e.target.value })}
+   472→   472→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30 resize-none"
+   473→   473→                    />
+   474→   474→                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+   475→   475→                      <select
+   476→   476→                        value={form.category || "General"}
+   477→   477→                        onChange={(e) => setForm({ ...form, category: e.target.value })}
+   478→   478→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   479→   479→                      >
+   480→   480→                        {noticeCategories.map((c) => (
+   481→   481→                          <option key={c} value={c}>{c}</option>
+   482→   482→                        ))}
+   483→   483→                      </select>
+   484→   484→                      <input
+   485→   485→                        type="date"
+   486→   486→                        value={form.date || ""}
+   487→   487→                        onChange={(e) => setForm({ ...form, date: e.target.value })}
+   488→   488→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   489→   489→                      />
+   490→   490→                      <select
+   491→   491→                        value={form.active || "true"}
+   492→   492→                        onChange={(e) => setForm({ ...form, active: e.target.value })}
+   493→   493→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   494→   494→                      >
+   495→   495→                        <option value="true">Active</option>
+   496→   496→                        <option value="false">Inactive</option>
+   497→   497→                      </select>
+   498→   498→                    </div>
+   499→   499→                    <div className="flex items-center gap-2">
+   500→   500→                      <Button onClick={saveNotice} className="bg-navy hover:bg-navy-light text-white text-sm">
+   501→   501→                        <Save className="w-4 h-4 mr-1" /> Save
+   502→   502→                      </Button>
+   503→   503→                      <Button variant="outline" onClick={cancelEdit} className="text-sm">
+   504→   504→                        <X className="w-4 h-4 mr-1" /> Cancel
+   505→   505→                      </Button>
+   506→   506→                    </div>
+   507→   507→                  </div>
+   508→   508→                )}
+   509→   509→
+   510→   510→                {/* List */}
+   511→   511→                {notices.map((notice) => (
+   512→   512→                  <div
+   513→   513→                    key={notice.id}
+   514→   514→                    className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex items-start gap-3"
+   515→   515→                  >
+   516→   516→                    <Bell className="w-5 h-5 text-navy shrink-0 mt-0.5" />
+   517→   517→                    <div className="flex-1 min-w-0">
+   518→   518→                      <div className="flex items-center gap-2 mb-1">
+   519→   519→                        <h3 className="text-sm font-semibold text-navy">{notice.title}</h3>
+   520→   520→                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+   521→   521→                          notice.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+   522→   522→                        }`}>
+   523→   523→                          {notice.active ? "Active" : "Inactive"}
+   524→   524→                        </span>
+   525→   525→                      </div>
+   526→   526→                      <p className="text-xs text-muted-foreground line-clamp-1">{notice.content}</p>
+   527→   527→                    </div>
+   528→   528→                    <div className="flex items-center gap-1 shrink-0">
+   529→   529→                      <button
+   530→   530→                        onClick={() => startEdit(notice, "notices")}
+   531→   531→                        className="p-1.5 text-navy hover:text-gold hover:bg-gold/10 rounded-lg transition-colors"
+   532→   532→                      >
+   533→   533→                        <Pencil className="w-4 h-4" />
+   534→   534→                      </button>
+   535→   535→                      <button
+   536→   536→                        onClick={() => deleteNotice(notice.id)}
+   537→   537→                        className="p-1.5 text-navy hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+   538→   538→                      >
+   539→   539→                        <Trash2 className="w-4 h-4" />
+   540→   540→                      </button>
+   541→   541→                    </div>
+   542→   542→                  </div>
+   543→   543→                ))}
+   544→   544→              </div>
+   545→   545→            )}
+   546→   546→
+   547→   547→            {/* ====== EVENTS TAB ====== */}
+   548→   548→            {activeTab === "events" && (
+   549→   549→              <div className="space-y-4 animate-fade-in">
+   550→   550→                <div className="flex items-center justify-between">
+   551→   551→                  <h2 className="text-lg font-semibold text-navy">Manage Events</h2>
+   552→   552→                  <Button
+   553→   553→                    onClick={() => startCreate("events")}
+   554→   554→                    className="bg-gold hover:bg-gold-dark text-white text-sm"
+   555→   555→                  >
+   556→   556→                    <Plus className="w-4 h-4 mr-1" /> Add Event
+   557→   557→                  </Button>
+   558→   558→                </div>
+   559→   559→
+   560→   560→                {/* Create/Edit form */}
+   561→   561→                {(isCreating || editingItem) && activeTab === "events" && (
+   562→   562→                  <div className="bg-white rounded-xl p-5 border border-gold/20 shadow-sm space-y-3">
+   563→   563→                    <h3 className="font-semibold text-navy text-sm">
+   564→   564→                      {editingItem ? "Edit Event" : "New Event"}
+   565→   565→                    </h3>
+   566→   566→                    <input
+   567→   567→                      type="text"
+   568→   568→                      placeholder="Event Title"
+   569→   569→                      value={form.title || ""}
+   570→   570→                      onChange={(e) => setForm({ ...form, title: e.target.value })}
+   571→   571→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   572→   572→                    />
+   573→   573→                    <textarea
+   574→   574→                      placeholder="Description"
+   575→   575→                      rows={3}
+   576→   576→                      value={form.description || ""}
+   577→   577→                      onChange={(e) => setForm({ ...form, description: e.target.value })}
+   578→   578→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30 resize-none"
+   579→   579→                    />
+   580→   580→                    <div className="grid grid-cols-2 gap-3">
+   581→   581→                      <div>
+   582→   582→                        <label className="text-xs text-muted-foreground mb-1 block">Start Date & Time</label>
+   583→   583→                        <input
+   584→   584→                          type="datetime-local"
+   585→   585→                          value={form.date || ""}
+   586→   586→                          onChange={(e) => setForm({ ...form, date: e.target.value })}
+   587→   587→                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   588→   588→                        />
+   589→   589→                      </div>
+   590→   590→                      <div>
+   591→   591→                        <label className="text-xs text-muted-foreground mb-1 block">End Date & Time</label>
+   592→   592→                        <input
+   593→   593→                          type="datetime-local"
+   594→   594→                          value={form.endTime || ""}
+   595→   595→                          onChange={(e) => setForm({ ...form, endTime: e.target.value })}
+   596→   596→                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   597→   597→                        />
+   598→   598→                      </div>
+   599→   599→                    </div>
+   600→   600→                    <div className="grid grid-cols-3 gap-3">
+   601→   601→                      <select
+   602→   602→                        value={form.category || "General"}
+   603→   603→                        onChange={(e) => setForm({ ...form, category: e.target.value })}
+   604→   604→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   605→   605→                      >
+   606→   606→                        {eventCategories.map((c) => (
+   607→   607→                          <option key={c} value={c}>{c}</option>
+   608→   608→                        ))}
+   609→   609→                      </select>
+   610→   610→                      <input
+   611→   611→                        type="text"
+   612→   612→                        placeholder="Venue"
+   613→   613→                        value={form.venue || ""}
+   614→   614→                        onChange={(e) => setForm({ ...form, venue: e.target.value })}
+   615→   615→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   616→   616→                      />
+   617→   617→                      <select
+   618→   618→                        value={form.active || "true"}
+   619→   619→                        onChange={(e) => setForm({ ...form, active: e.target.value })}
+   620→   620→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   621→   621→                      >
+   622→   622→                        <option value="true">Active</option>
+   623→   623→                        <option value="false">Inactive</option>
+   624→   624→                      </select>
+   625→   625→                    </div>
+   626→   626→                    <div className="flex items-center gap-2">
+   627→   627→                      <Button onClick={saveEvent} className="bg-navy hover:bg-navy-light text-white text-sm">
+   628→   628→                        <Save className="w-4 h-4 mr-1" /> Save
+   629→   629→                      </Button>
+   630→   630→                      <Button variant="outline" onClick={cancelEdit} className="text-sm">
+   631→   631→                        <X className="w-4 h-4 mr-1" /> Cancel
+   632→   632→                      </Button>
+   633→   633→                    </div>
+   634→   634→                  </div>
+   635→   635→                )}
+   636→   636→
+   637→   637→                {/* List */}
+   638→   638→                {events.map((event) => (
+   639→   639→                  <div
+   640→   640→                    key={event.id}
+   641→   641→                    className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex items-start gap-3"
+   642→   642→                  >
+   643→   643→                    <Calendar className="w-5 h-5 text-navy shrink-0 mt-0.5" />
+   644→   644→                    <div className="flex-1 min-w-0">
+   645→   645→                      <div className="flex items-center gap-2 mb-1">
+   646→   646→                        <h3 className="text-sm font-semibold text-navy">{event.title}</h3>
+   647→   647→                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+   648→   648→                          event.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+   649→   649→                        }`}>
+   650→   650→                          {event.active ? "Active" : "Inactive"}
+   651→   651→                        </span>
+   652→   652→                      </div>
+   653→   653→                      <p className="text-xs text-muted-foreground">
+   654→   654→                        {new Date(event.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+   655→   655→                        {" · "}{event.venue} · {event.category}
+   656→   656→                      </p>
+   657→   657→                    </div>
+   658→   658→                    <div className="flex items-center gap-1 shrink-0">
+   659→   659→                      <button
+   660→   660→                        onClick={() => startEdit(event, "events")}
+   661→   661→                        className="p-1.5 text-navy hover:text-gold hover:bg-gold/10 rounded-lg transition-colors"
+   662→   662→                      >
+   663→   663→                        <Pencil className="w-4 h-4" />
+   664→   664→                      </button>
+   665→   665→                      <button
+   666→   666→                        onClick={() => deleteEvent(event.id)}
+   667→   667→                        className="p-1.5 text-navy hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+   668→   668→                      >
+   669→   669→                        <Trash2 className="w-4 h-4" />
+   670→   670→                      </button>
+   671→   671→                    </div>
+   672→   672→                  </div>
+   673→   673→                ))}
+   674→   674→              </div>
+   675→   675→            )}
+   676→   676→
+   677→   677→            {/* ====== ANNOUNCEMENTS TAB ====== */}
+   678→   678→            {activeTab === "announcements" && (
+   679→   679→              <div className="space-y-4 animate-fade-in">
+   680→   680→                <div className="flex items-center justify-between">
+   681→   681→                  <h2 className="text-lg font-semibold text-navy">Manage Announcements</h2>
+   682→   682→                  <Button
+   683→   683→                    onClick={() => startCreate("announcements")}
+   684→   684→                    className="bg-gold hover:bg-gold-dark text-white text-sm"
+   685→   685→                  >
+   686→   686→                    <Plus className="w-4 h-4 mr-1" /> Add Announcement
+   687→   687→                  </Button>
+   688→   688→                </div>
+   689→   689→
+   690→   690→                {/* Create/Edit form */}
+   691→   691→                {(isCreating || editingItem) && activeTab === "announcements" && (
+   692→   692→                  <div className="bg-white rounded-xl p-5 border border-gold/20 shadow-sm space-y-3">
+   693→   693→                    <h3 className="font-semibold text-navy text-sm">
+   694→   694→                      {editingItem ? "Edit Announcement" : "New Announcement"}
+   695→   695→                    </h3>
+   696→   696→                    <input
+   697→   697→                      type="text"
+   698→   698→                      placeholder="Title"
+   699→   699→                      value={form.title || ""}
+   700→   700→                      onChange={(e) => setForm({ ...form, title: e.target.value })}
+   701→   701→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   702→   702→                    />
+   703→   703→                    <textarea
+   704→   704→                      placeholder="Content"
+   705→   705→                      rows={3}
+   706→   706→                      value={form.content || ""}
+   707→   707→                      onChange={(e) => setForm({ ...form, content: e.target.value })}
+   708→   708→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30 resize-none"
+   709→   709→                    />
+   710→   710→                    <div className="grid grid-cols-2 gap-3">
+   711→   711→                      <select
+   712→   712→                        value={form.priority || "normal"}
+   713→   713→                        onChange={(e) => setForm({ ...form, priority: e.target.value })}
+   714→   714→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   715→   715→                      >
+   716→   716→                        {priorityOptions.map((p) => (
+   717→   717→                          <option key={p} value={p}>{p === "high" ? "High Priority" : "Normal"}</option>
+   718→   718→                        ))}
+   719→   719→                      </select>
+   720→   720→                      <select
+   721→   721→                        value={form.active || "true"}
+   722→   722→                        onChange={(e) => setForm({ ...form, active: e.target.value })}
+   723→   723→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   724→   724→                      >
+   725→   725→                        <option value="true">Active</option>
+   726→   726→                        <option value="false">Inactive</option>
+   727→   727→                      </select>
+   728→   728→                    </div>
+   729→   729→                    <div className="flex items-center gap-2">
+   730→   730→                      <Button onClick={saveAnnouncement} className="bg-navy hover:bg-navy-light text-white text-sm">
+   731→   731→                        <Save className="w-4 h-4 mr-1" /> Save
+   732→   732→                      </Button>
+   733→   733→                      <Button variant="outline" onClick={cancelEdit} className="text-sm">
+   734→   734→                        <X className="w-4 h-4 mr-1" /> Cancel
+   735→   735→                      </Button>
+   736→   736→                    </div>
+   737→   737→                  </div>
+   738→   738→                )}
+   739→   739→
+   740→   740→                {/* List */}
+   741→   741→                {announcements.map((ann) => (
+   742→   742→                  <div
+   743→   743→                    key={ann.id}
+   744→   744→                    className={`bg-white rounded-xl p-4 border shadow-sm flex items-start gap-3 ${
+   745→   745→                      ann.priority === "high" ? "border-l-4 border-l-red-400 border-red-100" : "border-gray-100"
+   746→   746→                    }`}
+   747→   747→                  >
+   748→   748→                    <Megaphone className={`w-5 h-5 shrink-0 mt-0.5 ${ann.priority === "high" ? "text-red-500" : "text-navy"}`} />
+   749→   749→                    <div className="flex-1 min-w-0">
+   750→   750→                      <div className="flex items-center gap-2 mb-1">
+   751→   751→                        <h3 className="text-sm font-semibold text-navy">{ann.title}</h3>
+   752→   752→                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+   753→   753→                          ann.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+   754→   754→                        }`}>
+   755→   755→                          {ann.active ? "Active" : "Inactive"}
+   756→   756→                        </span>
+   757→   757→                        {ann.priority === "high" && (
+   758→   758→                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-100 text-red-700">
+   759→   759→                            High Priority
+   760→   760→                          </span>
+   761→   761→                        )}
+   762→   762→                      </div>
+   763→   763→                      <p className="text-xs text-muted-foreground line-clamp-1">{ann.content}</p>
+   764→   764→                    </div>
+   765→   765→                    <div className="flex items-center gap-1 shrink-0">
+   766→   766→                      <button
+   767→   767→                        onClick={() => startEdit(ann, "announcements")}
+   768→   768→                        className="p-1.5 text-navy hover:text-gold hover:bg-gold/10 rounded-lg transition-colors"
+   769→   769→                      >
+   770→   770→                        <Pencil className="w-4 h-4" />
+   771→   771→                      </button>
+   772→   772→                      <button
+   773→   773→                        onClick={() => deleteAnnouncement(ann.id)}
+   774→   774→                        className="p-1.5 text-navy hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+   775→   775→                      >
+   776→   776→                        <Trash2 className="w-4 h-4" />
+   777→   777→                      </button>
+   778→   778→                    </div>
+   779→   779→                  </div>
+   780→   780→                ))}
+   781→   781→              </div>
+   782→   782→            )}
+   783→   783→
+   784→   784→            {/* ====== GALLERY TAB ====== */}
+   785→   785→            {activeTab === "gallery" && (
+   786→   786→              <div className="space-y-4 animate-fade-in">
+   787→   787→                <div className="flex items-center justify-between">
+   788→   788→                  <h2 className="text-lg font-semibold text-navy">Manage Gallery Images</h2>
+   789→   789→                  <Button
+   790→   790→                    onClick={() => startCreate("gallery")}
+   791→   791→                    className="bg-gold hover:bg-gold-dark text-white text-sm"
+   792→   792→                  >
+   793→   793→                    <Plus className="w-4 h-4 mr-1" /> Add Image
+   794→   794→                  </Button>
+   795→   795→                </div>
+   796→   796→
+   797→   797→                {/* Create/Edit form */}
+   798→   798→                {(isCreating || editingItem) && activeTab === "gallery" && (
+   799→   799→                  <div className="bg-white rounded-xl p-5 border border-gold/20 shadow-sm space-y-3">
+   800→   800→                    <h3 className="font-semibold text-navy text-sm">
+   801→   801→                      {editingItem ? "Edit Gallery Image" : "New Gallery Image"}
+   802→   802→                    </h3>
+   803→   803→
+   804→   804→                    {/* Image upload area */}
+   805→   805→                    <div
+   806→   806→                      className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-gold/50 transition-colors cursor-pointer"
+   807→   807→                      onClick={() => fileInputRef.current?.click()}
+   808→   808→                    >
+   809→   809→                      {form.imageUrl ? (
+   810→   810→                        <div className="space-y-2">
+   811→   811→                          <img
+   812→   812→                            src={form.imageUrl}
+   813→   813→                            alt="Preview"
+   814→   814→                            className="max-h-48 mx-auto rounded-lg object-contain"
+   815→   815→                          />
+   816→   816→                          <p className="text-xs text-muted-foreground">
+   817→   817→                            Click to change image
+   818→   818→                          </p>
+   819→   819→                        </div>
+   820→   820→                      ) : (
+   821→   821→                        <div className="space-y-2">
+   822→   822→                          <Upload className="w-10 h-10 mx-auto text-muted-foreground" />
+   823→   823→                          <p className="text-sm text-muted-foreground">
+   824→   824→                            Click to upload an image
+   825→   825→                          </p>
+   826→   826→                          <p className="text-xs text-muted-foreground">
+   827→   827→                            Supports JPEG, PNG, WebP, GIF (max 10MB)
+   828→   828→                          </p>
+   829→   829→                        </div>
+   830→   830→                      )}
+   831→   831→                      <input
+   832→   832→                        ref={fileInputRef}
+   833→   833→                        type="file"
+   834→   834→                        accept="image/jpeg,image/png,image/webp,image/gif"
+   835→   835→                        className="hidden"
+   836→   836→                        onChange={(e) => {
+   837→   837→                          const file = e.target.files?.[0];
+   838→   838→                          if (file) {
+   839→   839→                            // Preview the file locally
+   840→   840→                            const reader = new FileReader();
+   841→   841→                            reader.onload = (ev) => {
+   842→   842→                              setForm({
+   843→   843→                                ...form,
+   844→   844→                                imageUrl: ev.target?.result as string,
+   845→   845→                                imageFile: file as unknown as string,
+   846→   846→                              });
+   847→   847→                            };
+   848→   848→                            reader.readAsDataURL(file);
+   849→   849→                          }
+   850→   850→                        }}
+   851→   851→                      />
+   852→   852→                    </div>
+   853→   853→
+   854→   854→                    {uploading && (
+   855→   855→                      <div className="text-center text-sm text-gold flex items-center justify-center gap-2">
+   856→   856→                        <div className="w-4 h-4 border-2 border-gold border-t-transparent rounded-full animate-spin" />
+   857→   857→                        Uploading image...
+   858→   858→                      </div>
+   859→   859→                    )}
+   860→   860→
+   861→   861→                    <input
+   862→   862→                      type="text"
+   863→   863→                      placeholder="Image Title"
+   864→   864→                      value={form.title || ""}
+   865→   865→                      onChange={(e) => setForm({ ...form, title: e.target.value })}
+   866→   866→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   867→   867→                    />
+   868→   868→                    <input
+   869→   869→                      type="text"
+   870→   870→                      placeholder="Alt Text (description for accessibility)"
+   871→   871→                      value={form.alt || ""}
+   872→   872→                      onChange={(e) => setForm({ ...form, alt: e.target.value })}
+   873→   873→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   874→   874→                    />
+   875→   875→                    <div className="grid grid-cols-3 gap-3">
+   876→   876→                      <select
+   877→   877→                        value={form.category || "School Campus"}
+   878→   878→                        onChange={(e) => setForm({ ...form, category: e.target.value })}
+   879→   879→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   880→   880→                      >
+   881→   881→                        {galleryCategories.map((c) => (
+   882→   882→                          <option key={c} value={c}>{c}</option>
+   883→   883→                        ))}
+   884→   884→                      </select>
+   885→   885→                      <input
+   886→   886→                        type="number"
+   887→   887→                        placeholder="Display Order"
+   888→   888→                        value={form.order || ""}
+   889→   889→                        onChange={(e) => setForm({ ...form, order: e.target.value })}
+   890→   890→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   891→   891→                      />
+   892→   892→                      <select
+   893→   893→                        value={form.active || "true"}
+   894→   894→                        onChange={(e) => setForm({ ...form, active: e.target.value })}
+   895→   895→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   896→   896→                      >
+   897→   897→                        <option value="true">Active</option>
+   898→   898→                        <option value="false">Inactive</option>
+   899→   899→                      </select>
+   900→   900→                    </div>
+   901→   901→                    <div className="flex items-center gap-2">
+   902→   902→                      <Button
+   903→   903→                        onClick={saveGalleryImage}
+   904→   904→                        disabled={uploading}
+   905→   905→                        className="bg-navy hover:bg-navy-light text-white text-sm"
+   906→   906→                      >
+   907→   907→                        <Save className="w-4 h-4 mr-1" /> {uploading ? "Uploading..." : "Save"}
+   908→   908→                      </Button>
+   909→   909→                      <Button variant="outline" onClick={cancelEdit} className="text-sm">
+   910→   910→                        <X className="w-4 h-4 mr-1" /> Cancel
+   911→   911→                      </Button>
+   912→   912→                    </div>
+   913→   913→                  </div>
+   914→   914→                )}
+   915→   915→
+   916→   916→                {/* Gallery image list */}
+   917→   917→                {galleryImages.length === 0 ? (
+   918→   918→                  <div className="text-center py-12">
+   919→   919→                    <Camera className="w-12 h-12 mx-auto mb-3 opacity-30" />
+   920→   920→                    <p className="text-muted-foreground">No gallery images yet. Add your first image!</p>
+   921→   921→                  </div>
+   922→   922→                ) : (
+   923→   923→                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+   924→   924→                    {galleryImages.map((img) => (
+   925→   925→                      <div
+   926→   926→                        key={img.id}
+   927→   927→                        className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden group"
+   928→   928→                      >
+   929→   929→                        <div className="relative h-48 overflow-hidden">
+   930→   930→                          <img
+   931→   931→                            src={img.imageUrl}
+   932→   932→                            alt={img.alt || img.title}
+   933→   933→                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+   934→   934→                          />
+   935→   935→                          <div className="absolute inset-0 bg-navy/0 group-hover:bg-navy/40 transition-all duration-300 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+   936→   936→                            <button
+   937→   937→                              onClick={() => startEdit(img, "gallery")}
+   938→   938→                              className="p-2 bg-white/90 rounded-lg text-navy hover:text-gold transition-colors"
+   939→   939→                            >
+   940→   940→                              <Pencil className="w-4 h-4" />
+   941→   941→                            </button>
+   942→   942→                            <button
+   943→   943→                              onClick={() => deleteGalleryImage(img.id)}
+   944→   944→                              className="p-2 bg-white/90 rounded-lg text-navy hover:text-red-600 transition-colors"
+   945→   945→                            >
+   946→   946→                              <Trash2 className="w-4 h-4" />
+   947→   947→                            </button>
+   948→   948→                          </div>
+   949→   949→                          <span className={`absolute top-2 right-2 text-[10px] px-2 py-0.5 rounded-full ${
+   950→   950→                            img.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+   951→   951→                          }`}>
+   952→   952→                            {img.active ? "Active" : "Inactive"}
+   953→   953→                          </span>
+   954→   954→                        </div>
+   955→   955→                        <div className="p-3">
+   956→   956→                          <h3 className="text-sm font-semibold text-navy truncate">{img.title}</h3>
+   957→   957→                          <p className="text-xs text-muted-foreground mt-1">{img.category} · Order: {img.order}</p>
+   958→   958→                        </div>
+   959→   959→                      </div>
+   960→   960→                    ))}
+   961→   961→                  </div>
+   962→   962→                )}
+   963→   963→              </div>
+   964→   964→            )}
+   965→   965→          </>
+   966→   966→        )}
+   967→   967→      </div>
+   968→   968→    </div>
+   969→   969→  );
+   970→   970→}
+   971→   971→
