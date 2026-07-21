@@ -16,6 +16,7 @@ const navItems = [
   { label: "Teachers", href: "teachers" },
   { label: "Gallery", href: "gallery" },
   { label: "Notices", href: "notices-page" },
+  { label: "Enquiry", href: "enquiry" },
   { label: "Contact", href: "contact" },
 ];
 

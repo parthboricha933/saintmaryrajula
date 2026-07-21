@@ -16,6 +16,11 @@ import {
   Camera,
   Upload,
   Image as ImageIcon,
+  MessageSquare,
+  Mail,
+  Phone,
+  User,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -61,7 +66,18 @@ type GalleryImage = {
   createdAt: string;
 };
 
-type AdminTab = "notices" | "events" | "announcements" | "gallery";
+type Enquiry = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  class: string;
+  message: string | null;
+  status: string;
+  createdAt: string;
+};
+
+type AdminTab = "notices" | "events" | "announcements" | "gallery" | "enquiries";
 
 const noticeCategories = ["General", "Academic", "Event", "Holiday"];
 const eventCategories = ["General", "Celebration", "Sports", "Academic", "Cultural"];
@@ -76,6 +92,9 @@ const galleryCategories = [
   "Celebrations",
 ];
 
+const enquiryStatuses = ["pending", "contacted", "admitted", "closed"];
+const classOptions = ["Nursery", "JKG", "SKG", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8"];
+
 export default function AdminDashboard({
   user,
   onLogout,
@@ -88,6 +107,8 @@ export default function AdminDashboard({
   const [events, setEvents] = useState<SchoolEvent[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+  const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
+  const [enquiryFilter, setEnquiryFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -101,16 +122,18 @@ export default function AdminDashboard({
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [nRes, eRes, aRes, gRes] = await Promise.all([
+      const [nRes, eRes, aRes, gRes, eqRes] = await Promise.all([
         fetch("/api/notices"),
         fetch("/api/events"),
         fetch("/api/announcements"),
         fetch("/api/gallery"),
+        fetch("/api/enquiries"),
       ]);
       setNotices(await nRes.json());
       setEvents(await eRes.json());
       setAnnouncements(await aRes.json());
       setGalleryImages(await gRes.json());
+      if (eqRes.ok) setEnquiries(await eqRes.json());
     } catch (err) {
       console.error(err);
     } finally {
@@ -310,6 +333,28 @@ export default function AdminDashboard({
     }
   };
 
+  // --- Enquiries ---
+  const updateEnquiryStatus = async (id: string, status: string) => {
+    const res = await fetch("/api/enquiries", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, status }),
+    });
+    if (res.ok) {
+      showStatus(`Enquiry marked as ${status}!`);
+      fetchData();
+    }
+  };
+
+  const deleteEnquiry = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this enquiry?")) return;
+    const res = await fetch(`/api/enquiries?id=${id}`, { method: "DELETE" });
+    if (res.ok) {
+      showStatus("Enquiry deleted!");
+      fetchData();
+    }
+  };
+
   const startEdit = (item: Record<string, unknown>, type: AdminTab) => {
     setEditingItem(item.id as string);
     setIsCreating(false);
@@ -373,6 +418,7 @@ export default function AdminDashboard({
     { key: "events", label: "Events", icon: Calendar },
     { key: "announcements", label: "Announcements", icon: Megaphone },
     { key: "gallery", label: "Gallery", icon: Camera },
+    { key: "enquiries", label: "Enquiries", icon: MessageSquare },
   ];
 
   return (
@@ -959,6 +1005,129 @@ export default function AdminDashboard({
                       </div>
                     ))}
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* ====== ENQUIRIES TAB ====== */}
+            {activeTab === "enquiries" && (
+              <div className="space-y-4 animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-navy">Enquiries</h2>
+                  <div className="flex items-center gap-2">
+                    {/* Summary badges */}
+                    <span className="text-xs px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 font-medium">
+                      {enquiries.filter(e => e.status === "pending").length} Pending
+                    </span>
+                    <span className="text-xs px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 font-medium">
+                      {enquiries.filter(e => e.status === "contacted").length} Contacted
+                    </span>
+                  </div>
+                </div>
+
+                {/* Filter */}
+                <div className="flex items-center gap-2 overflow-x-auto">
+                  {["all", ...enquiryStatuses].map((status) => (
+                    <button
+                      key={status}
+                      onClick={() => setEnquiryFilter(status)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                        enquiryFilter === status
+                          ? "bg-navy text-white"
+                          : "bg-white text-navy hover:bg-navy/5 border border-gray-100"
+                      }`}
+                    >
+                      {status === "all" ? "All" : status.charAt(0).toUpperCase() + status.slice(1)}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Enquiries list */}
+                {enquiries.filter(e => enquiryFilter === "all" || e.status === enquiryFilter).length === 0 ? (
+                  <div className="text-center py-12">
+                    <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                    <p className="text-muted-foreground">
+                      {enquiryFilter === "all" ? "No enquiries yet" : `No ${enquiryFilter} enquiries`}
+                    </p>
+                  </div>
+                ) : (
+                  enquiries
+                    .filter(e => enquiryFilter === "all" || e.status === enquiryFilter)
+                    .map((enquiry) => (
+                      <div
+                        key={enquiry.id}
+                        className={`bg-white rounded-xl p-4 border shadow-sm ${
+                          enquiry.status === "pending"
+                            ? "border-l-4 border-l-amber-400 border-amber-50"
+                            : enquiry.status === "contacted"
+                            ? "border-l-4 border-l-blue-400 border-blue-50"
+                            : enquiry.status === "admitted"
+                            ? "border-l-4 border-l-green-400 border-green-50"
+                            : "border-gray-100"
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 rounded-full bg-navy/10 flex items-center justify-center shrink-0">
+                            <User className="w-5 h-5 text-navy" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              <h3 className="text-sm font-semibold text-navy">{enquiry.name}</h3>
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                                enquiry.status === "pending"
+                                  ? "bg-amber-100 text-amber-700"
+                                  : enquiry.status === "contacted"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : enquiry.status === "admitted"
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-gray-100 text-gray-500"
+                              }`}>
+                                {enquiry.status.charAt(0).toUpperCase() + enquiry.status.slice(1)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                              <span className="flex items-center gap-1">
+                                <Mail className="w-3 h-3" /> {enquiry.email}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Phone className="w-3 h-3" /> {enquiry.phone}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />{" "}
+                                {new Date(enquiry.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                              </span>
+                            </div>
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              Class: <span className="font-medium text-navy">{enquiry.class}</span>
+                            </div>
+                            {enquiry.message && (
+                              <p className="mt-2 text-xs text-gray-600 bg-gray-50 rounded-lg p-2 line-clamp-2">
+                                {enquiry.message}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex flex-col gap-1 shrink-0">
+                            <select
+                              value={enquiry.status}
+                              onChange={(e) => updateEnquiryStatus(enquiry.id, e.target.value)}
+                              className="text-[11px] px-2 py-1 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold/30"
+                            >
+                              {enquiryStatuses.map((s) => (
+                                <option key={s} value={s}>
+                                  {s.charAt(0).toUpperCase() + s.slice(1)}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              onClick={() => deleteEnquiry(enquiry.id)}
+                              className="p-1.5 text-navy hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors self-center"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
                 )}
               </div>
             )}
