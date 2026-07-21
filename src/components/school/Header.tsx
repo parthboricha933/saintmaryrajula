@@ -15,8 +15,11 @@ const navItems = [
   { label: "About", href: "about" },
   { label: "Teachers", href: "teachers" },
   { label: "Gallery", href: "gallery" },
+  { label: "Notices", href: "notices-page" },
   { label: "Contact", href: "contact" },
 ];
+
+const separateViews = ["teachers", "notices-page", "admin"];
 
 export default function Header({ onNavigate, currentView }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -33,13 +36,13 @@ export default function Header({ onNavigate, currentView }: HeaderProps) {
   const handleNavClick = (href: string) => {
     setIsMobileMenuOpen(false);
 
-    // Teachers is a separate view
-    if (href === "teachers") {
-      onNavigate("teachers");
+    // Separate full-page views
+    if (separateViews.includes(href)) {
+      onNavigate(href);
       return;
     }
 
-    // If we're on a different view, go home first
+    // If on a different view, go home first then scroll
     if (currentView !== "home") {
       onNavigate("home");
       setTimeout(() => {
@@ -49,11 +52,16 @@ export default function Header({ onNavigate, currentView }: HeaderProps) {
       return;
     }
 
-    // On home view, just scroll to section
+    // On home view, just scroll
     const el = document.querySelector(`#${href}`);
     if (el) {
       el.scrollIntoView({ behavior: "smooth" });
     }
+  };
+
+  const isActive = (href: string) => {
+    if (separateViews.includes(href) && currentView === href) return true;
+    return false;
   };
 
   return (
@@ -111,8 +119,8 @@ export default function Header({ onNavigate, currentView }: HeaderProps) {
               <button
                 key={item.label}
                 onClick={() => handleNavClick(item.href)}
-                className={`px-4 py-2 text-sm font-medium transition-colors rounded-lg ${
-                  currentView === "teachers" && item.href === "teachers"
+                className={`px-3 py-2 text-sm font-medium transition-colors rounded-lg ${
+                  isActive(item.href)
                     ? "text-gold bg-gold/10"
                     : "text-navy-light hover:text-gold hover:bg-gold/5"
                 }`}
@@ -121,10 +129,10 @@ export default function Header({ onNavigate, currentView }: HeaderProps) {
               </button>
             ))}
             <Button
-              className="ml-4 bg-gold hover:bg-gold-dark text-white font-semibold px-6 rounded-lg shadow-md hover:shadow-lg transition-all"
-              onClick={() => handleNavClick("contact")}
+              className="ml-3 bg-gold hover:bg-gold-dark text-white font-semibold px-5 rounded-lg shadow-md hover:shadow-lg transition-all text-sm"
+              onClick={() => handleNavClick("admin")}
             >
-              Admission Open
+              Admin
             </Button>
           </div>
 
@@ -152,7 +160,7 @@ export default function Header({ onNavigate, currentView }: HeaderProps) {
                 key={item.label}
                 onClick={() => handleNavClick(item.href)}
                 className={`block w-full text-left px-4 py-3 font-medium rounded-lg transition-colors ${
-                  currentView === "teachers" && item.href === "teachers"
+                  isActive(item.href)
                     ? "text-gold bg-gold/5"
                     : "text-navy-light hover:bg-gold/5 hover:text-gold"
                 }`}
@@ -162,10 +170,10 @@ export default function Header({ onNavigate, currentView }: HeaderProps) {
             ))}
             <div className="pt-2">
               <Button
-                className="w-full bg-gold hover:bg-gold-dark text-white font-semibold rounded-lg"
-                onClick={() => handleNavClick("contact")}
+                className="w-full bg-navy hover:bg-navy-light text-white font-semibold rounded-lg text-sm"
+                onClick={() => handleNavClick("admin")}
               >
-                Admission Open
+                Admin Panel
               </Button>
             </div>
           </div>

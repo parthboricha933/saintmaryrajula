@@ -11,13 +11,30 @@ import NoticesSection from "@/components/school/NoticesSection";
 import GallerySection from "@/components/school/GallerySection";
 import TeachersPage from "@/components/school/TeachersPage";
 import TeacherDetailPage from "@/components/school/TeacherDetailPage";
+import NoticesEventsPage from "@/components/school/NoticesEventsPage";
+import AdminLogin from "@/components/school/AdminLogin";
+import AdminDashboard from "@/components/school/AdminDashboard";
 import LoadingScreen from "@/components/school/LoadingScreen";
 
-type View = "home" | "teachers" | "teacher-detail";
+type View =
+  | "home"
+  | "teachers"
+  | "teacher-detail"
+  | "notices-page"
+  | "admin"
+  | "admin-dashboard";
+
+type AdminUser = {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+};
 
 export default function Home() {
   const [currentView, setCurrentView] = useState<View>("home");
   const [selectedTeacherId, setSelectedTeacherId] = useState<number | null>(null);
+  const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
 
   // Scroll to top when view changes
   useEffect(() => {
@@ -25,18 +42,20 @@ export default function Home() {
   }, [currentView]);
 
   const handleNavigate = (view: string) => {
-    if (view === "teachers") {
-      setCurrentView("teachers");
+    if (
+      view === "teachers" ||
+      view === "notices-page" ||
+      view === "admin" ||
+      view === "admin-dashboard"
+    ) {
+      setCurrentView(view as View);
     } else if (view === "home") {
       setCurrentView("home");
-      // Small delay then scroll to section or top
       setTimeout(() => {
-        const el = document.querySelector(`#${view}`);
-        if (el) el.scrollIntoView({ behavior: "smooth" });
-        else window.scrollTo({ top: 0, behavior: "smooth" });
+        window.scrollTo({ top: 0, behavior: "smooth" });
       }, 100);
     } else {
-      // For section-based navigation (e.g. "contact", "about"), go home first then scroll
+      // Section-based navigation (about, contact, etc.)
       setCurrentView("home");
       setTimeout(() => {
         const el = document.querySelector(`#${view}`);
@@ -53,6 +72,16 @@ export default function Home() {
   const handleBackToTeachers = () => {
     setSelectedTeacherId(null);
     setCurrentView("teachers");
+  };
+
+  const handleAdminLogin = (user: AdminUser) => {
+    setAdminUser(user);
+    setCurrentView("admin-dashboard");
+  };
+
+  const handleAdminLogout = () => {
+    setAdminUser(null);
+    setCurrentView("admin");
   };
 
   return (
@@ -80,6 +109,11 @@ export default function Home() {
               onBack={handleBackToTeachers}
               onNavigateHome={(section) => handleNavigate(section)}
             />
+          )}
+          {currentView === "notices-page" && <NoticesEventsPage />}
+          {currentView === "admin" && <AdminLogin onLogin={handleAdminLogin} />}
+          {currentView === "admin-dashboard" && adminUser && (
+            <AdminDashboard user={adminUser} onLogout={handleAdminLogout} />
           )}
         </main>
         <Footer />

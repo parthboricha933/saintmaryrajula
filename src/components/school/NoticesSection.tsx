@@ -1,13 +1,22 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useInView } from "react-intersection-observer";
-import { notices } from "@/data/school-data";
-import { Bell, Calendar, Tag, ChevronRight } from "lucide-react";
+import { Bell, Calendar, ChevronRight, ArrowRight } from "lucide-react";
+
+type Notice = {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  date: string;
+  active: boolean;
+};
 
 const categoryColors: Record<string, string> = {
   Event: "bg-blue-100 text-blue-700",
   Holiday: "bg-green-100 text-green-700",
-  Academic: "bg-gold/10 text-gold-dark",
+  Academic: "bg-amber-100 text-amber-700",
   General: "bg-gray-100 text-gray-700",
 };
 
@@ -22,9 +31,20 @@ function formatDate(dateStr: string): string {
 
 export default function NoticesSection() {
   const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.2 });
+  const [notices, setNotices] = useState<Notice[]>([]);
+
+  useEffect(() => {
+    fetch("/api/notices")
+      .then((r) => r.json())
+      .then(setNotices)
+      .catch(console.error);
+  }, []);
+
+  // Show only the 3 latest on the home page
+  const displayNotices = notices.slice(0, 3);
 
   return (
-    <section className="py-16 lg:py-24 bg-secondary/50">
+    <section id="notices" className="py-16 lg:py-24 bg-secondary/50">
       <div ref={ref} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section header */}
         <div className="text-center mb-10 lg:mb-14">
@@ -43,7 +63,7 @@ export default function NoticesSection() {
 
         {/* Notices list */}
         <div className="max-w-3xl mx-auto space-y-4">
-          {notices.map((notice, index) => (
+          {displayNotices.map((notice, index) => (
             <div
               key={notice.id}
               className={`bg-white rounded-xl p-5 sm:p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-gold/20 transition-all duration-300 group cursor-pointer ${
@@ -83,6 +103,23 @@ export default function NoticesSection() {
             </div>
           ))}
         </div>
+
+        {/* View all link */}
+        {notices.length > 3 && (
+          <div className="text-center mt-8">
+            <button
+              onClick={() => {
+                const navEl = document.querySelector('[data-nav="notices-page"]') as HTMLElement;
+                if (navEl) navEl.click();
+                else window.location.hash = "notices-page";
+              }}
+              className="inline-flex items-center gap-2 text-gold hover:text-gold-dark font-medium text-sm transition-colors group"
+            >
+              View All Notices, Events & Announcements
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );

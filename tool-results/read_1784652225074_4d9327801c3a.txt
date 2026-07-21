@@ -1,0 +1,673 @@
+     1→"use client";
+     2→
+     3→import { useState, useEffect } from "react";
+     4→import {
+     5→  Bell,
+     6→  Calendar,
+     7→  Megaphone,
+     8→  Plus,
+     9→  Pencil,
+    10→  Trash2,
+    11→  Save,
+    12→  X,
+    13→  LogOut,
+    14→  LayoutDashboard,
+    15→  CheckCircle,
+    16→} from "lucide-react";
+    17→import { Button } from "@/components/ui/button";
+    18→
+    19→type AdminUser = { id: string; email: string; name: string; role: string };
+    20→
+    21→type Notice = {
+    22→  id: string;
+    23→  title: string;
+    24→  content: string;
+    25→  category: string;
+    26→  date: string;
+    27→  active: boolean;
+    28→};
+    29→
+    30→type SchoolEvent = {
+    31→  id: string;
+    32→  title: string;
+    33→  description: string;
+    34→  date: string;
+    35→  endTime: string | null;
+    36→  venue: string;
+    37→  category: string;
+    38→  active: boolean;
+    39→};
+    40→
+    41→type Announcement = {
+    42→  id: string;
+    43→  title: string;
+    44→  content: string;
+    45→  priority: string;
+    46→  active: boolean;
+    47→  createdAt: string;
+    48→};
+    49→
+    50→type AdminTab = "notices" | "events" | "announcements";
+    51→
+    52→const noticeCategories = ["General", "Academic", "Event", "Holiday"];
+    53→const eventCategories = ["General", "Celebration", "Sports", "Academic", "Cultural"];
+    54→const priorityOptions = ["normal", "high"];
+    55→
+    56→export default function AdminDashboard({
+    57→  user,
+    58→  onLogout,
+    59→}: {
+    60→  user: AdminUser;
+    61→  onLogout: () => void;
+    62→}) {
+    63→  const [activeTab, setActiveTab] = useState<AdminTab>("notices");
+    64→  const [notices, setNotices] = useState<Notice[]>([]);
+    65→  const [events, setEvents] = useState<SchoolEvent[]>([]);
+    66→  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+    67→  const [loading, setLoading] = useState(true);
+    68→  const [editingItem, setEditingItem] = useState<string | null>(null);
+    69→  const [isCreating, setIsCreating] = useState(false);
+    70→  const [saveStatus, setSaveStatus] = useState<string | null>(null);
+    71→
+    72→  // Form state
+    73→  const [form, setForm] = useState<Record<string, string>>({});
+    74→
+    75→  const fetchData = async () => {
+    76→    setLoading(true);
+    77→    try {
+    78→      const [nRes, eRes, aRes] = await Promise.all([
+    79→        fetch("/api/notices"),
+    80→        fetch("/api/events"),
+    81→        fetch("/api/announcements"),
+    82→      ]);
+    83→      setNotices(await nRes.json());
+    84→      setEvents(await eRes.json());
+    85→      setAnnouncements(await aRes.json());
+    86→    } catch (err) {
+    87→      console.error(err);
+    88→    } finally {
+    89→      setLoading(false);
+    90→    }
+    91→  };
+    92→
+    93→  useEffect(() => {
+    94→    fetchData();
+    95→  }, []);
+    96→
+    97→  const showStatus = (msg: string) => {
+    98→    setSaveStatus(msg);
+    99→    setTimeout(() => setSaveStatus(null), 3000);
+   100→  };
+   101→
+   102→  // --- Notices CRUD ---
+   103→  const saveNotice = async () => {
+   104→    const payload = {
+   105→      ...(editingItem ? { id: editingItem } : {}),
+   106→      title: form.title || "",
+   107→      content: form.content || "",
+   108→      category: form.category || "General",
+   109→      date: form.date || new Date().toISOString(),
+   110→      active: form.active !== "false",
+   111→    };
+   112→
+   113→    const res = await fetch("/api/notices", {
+   114→      method: editingItem ? "PUT" : "POST",
+   115→      headers: { "Content-Type": "application/json" },
+   116→      body: JSON.stringify(payload),
+   117→    });
+   118→
+   119→    if (res.ok) {
+   120→      showStatus(editingItem ? "Notice updated!" : "Notice created!");
+   121→      setEditingItem(null);
+   122→      setIsCreating(false);
+   123→      setForm({});
+   124→      fetchData();
+   125→    }
+   126→  };
+   127→
+   128→  const deleteNotice = async (id: string) => {
+   129→    if (!confirm("Are you sure you want to delete this notice?")) return;
+   130→    const res = await fetch(`/api/notices?id=${id}`, { method: "DELETE" });
+   131→    if (res.ok) {
+   132→      showStatus("Notice deleted!");
+   133→      fetchData();
+   134→    }
+   135→  };
+   136→
+   137→  // --- Events CRUD ---
+   138→  const saveEvent = async () => {
+   139→    const payload = {
+   140→      ...(editingItem ? { id: editingItem } : {}),
+   141→      title: form.title || "",
+   142→      description: form.description || "",
+   143→      date: form.date || new Date().toISOString(),
+   144→      endTime: form.endTime || null,
+   145→      venue: form.venue || "School Campus",
+   146→      category: form.category || "General",
+   147→      active: form.active !== "false",
+   148→    };
+   149→
+   150→    const res = await fetch("/api/events", {
+   151→      method: editingItem ? "PUT" : "POST",
+   152→      headers: { "Content-Type": "application/json" },
+   153→      body: JSON.stringify(payload),
+   154→    });
+   155→
+   156→    if (res.ok) {
+   157→      showStatus(editingItem ? "Event updated!" : "Event created!");
+   158→      setEditingItem(null);
+   159→      setIsCreating(false);
+   160→      setForm({});
+   161→      fetchData();
+   162→    }
+   163→  };
+   164→
+   165→  const deleteEvent = async (id: string) => {
+   166→    if (!confirm("Are you sure you want to delete this event?")) return;
+   167→    const res = await fetch(`/api/events?id=${id}`, { method: "DELETE" });
+   168→    if (res.ok) {
+   169→      showStatus("Event deleted!");
+   170→      fetchData();
+   171→    }
+   172→  };
+   173→
+   174→  // --- Announcements CRUD ---
+   175→  const saveAnnouncement = async () => {
+   176→    const payload = {
+   177→      ...(editingItem ? { id: editingItem } : {}),
+   178→      title: form.title || "",
+   179→      content: form.content || "",
+   180→      priority: form.priority || "normal",
+   181→      active: form.active !== "false",
+   182→    };
+   183→
+   184→    const res = await fetch("/api/announcements", {
+   185→      method: editingItem ? "PUT" : "POST",
+   186→      headers: { "Content-Type": "application/json" },
+   187→      body: JSON.stringify(payload),
+   188→    });
+   189→
+   190→    if (res.ok) {
+   191→      showStatus(editingItem ? "Announcement updated!" : "Announcement created!");
+   192→      setEditingItem(null);
+   193→      setIsCreating(false);
+   194→      setForm({});
+   195→      fetchData();
+   196→    }
+   197→  };
+   198→
+   199→  const deleteAnnouncement = async (id: string) => {
+   200→    if (!confirm("Are you sure you want to delete this announcement?")) return;
+   201→    const res = await fetch(`/api/announcements?id=${id}`, { method: "DELETE" });
+   202→    if (res.ok) {
+   203→      showStatus("Announcement deleted!");
+   204→      fetchData();
+   205→    }
+   206→  };
+   207→
+   208→  const startEdit = (item: Record<string, unknown>, type: AdminTab) => {
+   209→    setEditingItem(item.id as string);
+   210→    setIsCreating(false);
+   211→    setActiveTab(type);
+   212→    if (type === "notices") {
+   213→      const n = item as Notice;
+   214→      setForm({
+   215→        title: n.title,
+   216→        content: n.content,
+   217→        category: n.category,
+   218→        date: n.date ? new Date(n.date).toISOString().split("T")[0] : "",
+   219→        active: String(n.active),
+   220→      });
+   221→    } else if (type === "events") {
+   222→      const e = item as SchoolEvent;
+   223→      setForm({
+   224→        title: e.title,
+   225→        description: e.description,
+   226→        date: e.date ? new Date(e.date).toISOString().split("T")[0] + "T09:00" : "",
+   227→        endTime: e.endTime ? new Date(e.endTime!).toISOString().split("T")[0] + "T12:00" : "",
+   228→        venue: e.venue,
+   229→        category: e.category,
+   230→        active: String(e.active),
+   231→      });
+   232→    } else {
+   233→      const a = item as Announcement;
+   234→      setForm({
+   235→        title: a.title,
+   236→        content: a.content,
+   237→        priority: a.priority,
+   238→        active: String(a.active),
+   239→      });
+   240→    }
+   241→  };
+   242→
+   243→  const startCreate = (type: AdminTab) => {
+   244→    setActiveTab(type);
+   245→    setIsCreating(true);
+   246→    setEditingItem(null);
+   247→    setForm({ active: "true", category: "General", priority: "normal", venue: "School Campus" });
+   248→  };
+   249→
+   250→  const cancelEdit = () => {
+   251→    setEditingItem(null);
+   252→    setIsCreating(false);
+   253→    setForm({});
+   254→  };
+   255→
+   256→  const tabs: { key: AdminTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+   257→    { key: "notices", label: "Notices", icon: Bell },
+   258→    { key: "events", label: "Events", icon: Calendar },
+   259→    { key: "announcements", label: "Announcements", icon: Megaphone },
+   260→  ];
+   261→
+   262→  return (
+   263→    <div className="pt-28 sm:pt-32 pb-16 min-h-screen bg-secondary/30">
+   264→      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+   265→        {/* Header */}
+   266→        <div className="flex items-center justify-between mb-6">
+   267→          <div>
+   268→            <h1 className="text-2xl sm:text-3xl font-bold text-navy flex items-center gap-2">
+   269→              <LayoutDashboard className="w-7 h-7 text-gold" />
+   270→              Admin Panel
+   271→            </h1>
+   272→            <p className="text-sm text-muted-foreground mt-1">
+   273→              Welcome, {user.name || user.email}
+   274→            </p>
+   275→          </div>
+   276→          <Button
+   277→            variant="outline"
+   278→            onClick={onLogout}
+   279→            className="text-navy hover:text-red-600 hover:border-red-200"
+   280→          >
+   281→            <LogOut className="w-4 h-4 mr-2" />
+   282→            Logout
+   283→          </Button>
+   284→        </div>
+   285→
+   286→        {/* Status message */}
+   287→        {saveStatus && (
+   288→          <div className="mb-4 bg-green-50 text-green-700 text-sm p-3 rounded-lg border border-green-200 flex items-center gap-2 animate-fade-in">
+   289→            <CheckCircle className="w-4 h-4" />
+   290→            {saveStatus}
+   291→          </div>
+   292→        )}
+   293→
+   294→        {/* Tab navigation */}
+   295→        <div className="flex items-center gap-2 mb-6 overflow-x-auto">
+   296→          {tabs.map((tab) => {
+   297→            const Icon = tab.icon;
+   298→            return (
+   299→              <button
+   300→                key={tab.key}
+   301→                onClick={() => {
+   302→                  setActiveTab(tab.key);
+   303→                  cancelEdit();
+   304→                }}
+   305→                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+   306→                  activeTab === tab.key
+   307→                    ? "bg-navy text-white shadow-md"
+   308→                    : "bg-white text-navy hover:bg-navy/5 border border-gray-100"
+   309→                }`}
+   310→              >
+   311→                <Icon className="w-4 h-4" />
+   312→                {tab.label}
+   313→              </button>
+   314→            );
+   315→          })}
+   316→        </div>
+   317→
+   318→        {loading ? (
+   319→          <div className="text-center py-12">
+   320→            <div className="w-8 h-8 border-2 border-navy border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+   321→            <p className="text-muted-foreground text-sm">Loading data...</p>
+   322→          </div>
+   323→        ) : (
+   324→          <>
+   325→            {/* ====== NOTICES TAB ====== */}
+   326→            {activeTab === "notices" && (
+   327→              <div className="space-y-4 animate-fade-in">
+   328→                <div className="flex items-center justify-between">
+   329→                  <h2 className="text-lg font-semibold text-navy">Manage Notices</h2>
+   330→                  <Button
+   331→                    onClick={() => startCreate("notices")}
+   332→                    className="bg-gold hover:bg-gold-dark text-white text-sm"
+   333→                  >
+   334→                    <Plus className="w-4 h-4 mr-1" /> Add Notice
+   335→                  </Button>
+   336→                </div>
+   337→
+   338→                {/* Create/Edit form */}
+   339→                {(isCreating || editingItem) && activeTab === "notices" && (
+   340→                  <div className="bg-white rounded-xl p-5 border border-gold/20 shadow-sm space-y-3">
+   341→                    <h3 className="font-semibold text-navy text-sm">
+   342→                      {editingItem ? "Edit Notice" : "New Notice"}
+   343→                    </h3>
+   344→                    <input
+   345→                      type="text"
+   346→                      placeholder="Title"
+   347→                      value={form.title || ""}
+   348→                      onChange={(e) => setForm({ ...form, title: e.target.value })}
+   349→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   350→                    />
+   351→                    <textarea
+   352→                      placeholder="Content"
+   353→                      rows={3}
+   354→                      value={form.content || ""}
+   355→                      onChange={(e) => setForm({ ...form, content: e.target.value })}
+   356→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30 resize-none"
+   357→                    />
+   358→                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+   359→                      <select
+   360→                        value={form.category || "General"}
+   361→                        onChange={(e) => setForm({ ...form, category: e.target.value })}
+   362→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   363→                      >
+   364→                        {noticeCategories.map((c) => (
+   365→                          <option key={c} value={c}>{c}</option>
+   366→                        ))}
+   367→                      </select>
+   368→                      <input
+   369→                        type="date"
+   370→                        value={form.date || ""}
+   371→                        onChange={(e) => setForm({ ...form, date: e.target.value })}
+   372→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   373→                      />
+   374→                      <select
+   375→                        value={form.active || "true"}
+   376→                        onChange={(e) => setForm({ ...form, active: e.target.value })}
+   377→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   378→                      >
+   379→                        <option value="true">Active</option>
+   380→                        <option value="false">Inactive</option>
+   381→                      </select>
+   382→                    </div>
+   383→                    <div className="flex items-center gap-2">
+   384→                      <Button onClick={saveNotice} className="bg-navy hover:bg-navy-light text-white text-sm">
+   385→                        <Save className="w-4 h-4 mr-1" /> Save
+   386→                      </Button>
+   387→                      <Button variant="outline" onClick={cancelEdit} className="text-sm">
+   388→                        <X className="w-4 h-4 mr-1" /> Cancel
+   389→                      </Button>
+   390→                    </div>
+   391→                  </div>
+   392→                )}
+   393→
+   394→                {/* List */}
+   395→                {notices.map((notice) => (
+   396→                  <div
+   397→                    key={notice.id}
+   398→                    className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex items-start gap-3"
+   399→                  >
+   400→                    <Bell className="w-5 h-5 text-navy shrink-0 mt-0.5" />
+   401→                    <div className="flex-1 min-w-0">
+   402→                      <div className="flex items-center gap-2 mb-1">
+   403→                        <h3 className="text-sm font-semibold text-navy">{notice.title}</h3>
+   404→                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+   405→                          notice.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+   406→                        }`}>
+   407→                          {notice.active ? "Active" : "Inactive"}
+   408→                        </span>
+   409→                      </div>
+   410→                      <p className="text-xs text-muted-foreground line-clamp-1">{notice.content}</p>
+   411→                    </div>
+   412→                    <div className="flex items-center gap-1 shrink-0">
+   413→                      <button
+   414→                        onClick={() => startEdit(notice, "notices")}
+   415→                        className="p-1.5 text-navy hover:text-gold hover:bg-gold/10 rounded-lg transition-colors"
+   416→                      >
+   417→                        <Pencil className="w-4 h-4" />
+   418→                      </button>
+   419→                      <button
+   420→                        onClick={() => deleteNotice(notice.id)}
+   421→                        className="p-1.5 text-navy hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+   422→                      >
+   423→                        <Trash2 className="w-4 h-4" />
+   424→                      </button>
+   425→                    </div>
+   426→                  </div>
+   427→                ))}
+   428→              </div>
+   429→            )}
+   430→
+   431→            {/* ====== EVENTS TAB ====== */}
+   432→            {activeTab === "events" && (
+   433→              <div className="space-y-4 animate-fade-in">
+   434→                <div className="flex items-center justify-between">
+   435→                  <h2 className="text-lg font-semibold text-navy">Manage Events</h2>
+   436→                  <Button
+   437→                    onClick={() => startCreate("events")}
+   438→                    className="bg-gold hover:bg-gold-dark text-white text-sm"
+   439→                  >
+   440→                    <Plus className="w-4 h-4 mr-1" /> Add Event
+   441→                  </Button>
+   442→                </div>
+   443→
+   444→                {/* Create/Edit form */}
+   445→                {(isCreating || editingItem) && activeTab === "events" && (
+   446→                  <div className="bg-white rounded-xl p-5 border border-gold/20 shadow-sm space-y-3">
+   447→                    <h3 className="font-semibold text-navy text-sm">
+   448→                      {editingItem ? "Edit Event" : "New Event"}
+   449→                    </h3>
+   450→                    <input
+   451→                      type="text"
+   452→                      placeholder="Event Title"
+   453→                      value={form.title || ""}
+   454→                      onChange={(e) => setForm({ ...form, title: e.target.value })}
+   455→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   456→                    />
+   457→                    <textarea
+   458→                      placeholder="Description"
+   459→                      rows={3}
+   460→                      value={form.description || ""}
+   461→                      onChange={(e) => setForm({ ...form, description: e.target.value })}
+   462→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30 resize-none"
+   463→                    />
+   464→                    <div className="grid grid-cols-2 gap-3">
+   465→                      <div>
+   466→                        <label className="text-xs text-muted-foreground mb-1 block">Start Date & Time</label>
+   467→                        <input
+   468→                          type="datetime-local"
+   469→                          value={form.date || ""}
+   470→                          onChange={(e) => setForm({ ...form, date: e.target.value })}
+   471→                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   472→                        />
+   473→                      </div>
+   474→                      <div>
+   475→                        <label className="text-xs text-muted-foreground mb-1 block">End Date & Time</label>
+   476→                        <input
+   477→                          type="datetime-local"
+   478→                          value={form.endTime || ""}
+   479→                          onChange={(e) => setForm({ ...form, endTime: e.target.value })}
+   480→                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   481→                        />
+   482→                      </div>
+   483→                    </div>
+   484→                    <div className="grid grid-cols-3 gap-3">
+   485→                      <select
+   486→                        value={form.category || "General"}
+   487→                        onChange={(e) => setForm({ ...form, category: e.target.value })}
+   488→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   489→                      >
+   490→                        {eventCategories.map((c) => (
+   491→                          <option key={c} value={c}>{c}</option>
+   492→                        ))}
+   493→                      </select>
+   494→                      <input
+   495→                        type="text"
+   496→                        placeholder="Venue"
+   497→                        value={form.venue || ""}
+   498→                        onChange={(e) => setForm({ ...form, venue: e.target.value })}
+   499→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   500→                      />
+   501→                      <select
+   502→                        value={form.active || "true"}
+   503→                        onChange={(e) => setForm({ ...form, active: e.target.value })}
+   504→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   505→                      >
+   506→                        <option value="true">Active</option>
+   507→                        <option value="false">Inactive</option>
+   508→                      </select>
+   509→                    </div>
+   510→                    <div className="flex items-center gap-2">
+   511→                      <Button onClick={saveEvent} className="bg-navy hover:bg-navy-light text-white text-sm">
+   512→                        <Save className="w-4 h-4 mr-1" /> Save
+   513→                      </Button>
+   514→                      <Button variant="outline" onClick={cancelEdit} className="text-sm">
+   515→                        <X className="w-4 h-4 mr-1" /> Cancel
+   516→                      </Button>
+   517→                    </div>
+   518→                  </div>
+   519→                )}
+   520→
+   521→                {/* List */}
+   522→                {events.map((event) => (
+   523→                  <div
+   524→                    key={event.id}
+   525→                    className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex items-start gap-3"
+   526→                  >
+   527→                    <Calendar className="w-5 h-5 text-navy shrink-0 mt-0.5" />
+   528→                    <div className="flex-1 min-w-0">
+   529→                      <div className="flex items-center gap-2 mb-1">
+   530→                        <h3 className="text-sm font-semibold text-navy">{event.title}</h3>
+   531→                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+   532→                          event.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+   533→                        }`}>
+   534→                          {event.active ? "Active" : "Inactive"}
+   535→                        </span>
+   536→                      </div>
+   537→                      <p className="text-xs text-muted-foreground">
+   538→                        {new Date(event.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+   539→                        {" · "}{event.venue} · {event.category}
+   540→                      </p>
+   541→                    </div>
+   542→                    <div className="flex items-center gap-1 shrink-0">
+   543→                      <button
+   544→                        onClick={() => startEdit(event, "events")}
+   545→                        className="p-1.5 text-navy hover:text-gold hover:bg-gold/10 rounded-lg transition-colors"
+   546→                      >
+   547→                        <Pencil className="w-4 h-4" />
+   548→                      </button>
+   549→                      <button
+   550→                        onClick={() => deleteEvent(event.id)}
+   551→                        className="p-1.5 text-navy hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+   552→                      >
+   553→                        <Trash2 className="w-4 h-4" />
+   554→                      </button>
+   555→                    </div>
+   556→                  </div>
+   557→                ))}
+   558→              </div>
+   559→            )}
+   560→
+   561→            {/* ====== ANNOUNCEMENTS TAB ====== */}
+   562→            {activeTab === "announcements" && (
+   563→              <div className="space-y-4 animate-fade-in">
+   564→                <div className="flex items-center justify-between">
+   565→                  <h2 className="text-lg font-semibold text-navy">Manage Announcements</h2>
+   566→                  <Button
+   567→                    onClick={() => startCreate("announcements")}
+   568→                    className="bg-gold hover:bg-gold-dark text-white text-sm"
+   569→                  >
+   570→                    <Plus className="w-4 h-4 mr-1" /> Add Announcement
+   571→                  </Button>
+   572→                </div>
+   573→
+   574→                {/* Create/Edit form */}
+   575→                {(isCreating || editingItem) && activeTab === "announcements" && (
+   576→                  <div className="bg-white rounded-xl p-5 border border-gold/20 shadow-sm space-y-3">
+   577→                    <h3 className="font-semibold text-navy text-sm">
+   578→                      {editingItem ? "Edit Announcement" : "New Announcement"}
+   579→                    </h3>
+   580→                    <input
+   581→                      type="text"
+   582→                      placeholder="Title"
+   583→                      value={form.title || ""}
+   584→                      onChange={(e) => setForm({ ...form, title: e.target.value })}
+   585→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   586→                    />
+   587→                    <textarea
+   588→                      placeholder="Content"
+   589→                      rows={3}
+   590→                      value={form.content || ""}
+   591→                      onChange={(e) => setForm({ ...form, content: e.target.value })}
+   592→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30 resize-none"
+   593→                    />
+   594→                    <div className="grid grid-cols-2 gap-3">
+   595→                      <select
+   596→                        value={form.priority || "normal"}
+   597→                        onChange={(e) => setForm({ ...form, priority: e.target.value })}
+   598→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   599→                      >
+   600→                        {priorityOptions.map((p) => (
+   601→                          <option key={p} value={p}>{p === "high" ? "High Priority" : "Normal"}</option>
+   602→                        ))}
+   603→                      </select>
+   604→                      <select
+   605→                        value={form.active || "true"}
+   606→                        onChange={(e) => setForm({ ...form, active: e.target.value })}
+   607→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   608→                      >
+   609→                        <option value="true">Active</option>
+   610→                        <option value="false">Inactive</option>
+   611→                      </select>
+   612→                    </div>
+   613→                    <div className="flex items-center gap-2">
+   614→                      <Button onClick={saveAnnouncement} className="bg-navy hover:bg-navy-light text-white text-sm">
+   615→                        <Save className="w-4 h-4 mr-1" /> Save
+   616→                      </Button>
+   617→                      <Button variant="outline" onClick={cancelEdit} className="text-sm">
+   618→                        <X className="w-4 h-4 mr-1" /> Cancel
+   619→                      </Button>
+   620→                    </div>
+   621→                  </div>
+   622→                )}
+   623→
+   624→                {/* List */}
+   625→                {announcements.map((ann) => (
+   626→                  <div
+   627→                    key={ann.id}
+   628→                    className={`bg-white rounded-xl p-4 border shadow-sm flex items-start gap-3 ${
+   629→                      ann.priority === "high" ? "border-l-4 border-l-red-400 border-red-100" : "border-gray-100"
+   630→                    }`}
+   631→                  >
+   632→                    <Megaphone className={`w-5 h-5 shrink-0 mt-0.5 ${ann.priority === "high" ? "text-red-500" : "text-navy"}`} />
+   633→                    <div className="flex-1 min-w-0">
+   634→                      <div className="flex items-center gap-2 mb-1">
+   635→                        <h3 className="text-sm font-semibold text-navy">{ann.title}</h3>
+   636→                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+   637→                          ann.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+   638→                        }`}>
+   639→                          {ann.active ? "Active" : "Inactive"}
+   640→                        </span>
+   641→                        {ann.priority === "high" && (
+   642→                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-100 text-red-700">
+   643→                            High Priority
+   644→                          </span>
+   645→                        )}
+   646→                      </div>
+   647→                      <p className="text-xs text-muted-foreground line-clamp-1">{ann.content}</p>
+   648→                    </div>
+   649→                    <div className="flex items-center gap-1 shrink-0">
+   650→                      <button
+   651→                        onClick={() => startEdit(ann, "announcements")}
+   652→                        className="p-1.5 text-navy hover:text-gold hover:bg-gold/10 rounded-lg transition-colors"
+   653→                      >
+   654→                        <Pencil className="w-4 h-4" />
+   655→                      </button>
+   656→                      <button
+   657→                        onClick={() => deleteAnnouncement(ann.id)}
+   658→                        className="p-1.5 text-navy hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+   659→                      >
+   660→                        <Trash2 className="w-4 h-4" />
+   661→                      </button>
+   662→                    </div>
+   663→                  </div>
+   664→                ))}
+   665→              </div>
+   666→            )}
+   667→          </>
+   668→        )}
+   669→      </div>
+   670→    </div>
+   671→  );
+   672→}
+   673→
