@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Bell,
   Calendar,
@@ -13,6 +13,9 @@ import {
   LogOut,
   LayoutDashboard,
   CheckCircle,
+  Camera,
+  Upload,
+  Image as ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -47,11 +50,31 @@ type Announcement = {
   createdAt: string;
 };
 
-type AdminTab = "notices" | "events" | "announcements";
+type GalleryImage = {
+  id: string;
+  title: string;
+  category: string;
+  imageUrl: string;
+  alt: string | null;
+  active: boolean;
+  order: number;
+  createdAt: string;
+};
+
+type AdminTab = "notices" | "events" | "announcements" | "gallery";
 
 const noticeCategories = ["General", "Academic", "Event", "Holiday"];
 const eventCategories = ["General", "Celebration", "Sports", "Academic", "Cultural"];
 const priorityOptions = ["normal", "high"];
+const galleryCategories = [
+  "Classrooms",
+  "Annual Function",
+  "Sports Day",
+  "Science Activities",
+  "Cultural Events",
+  "School Campus",
+  "Celebrations",
+];
 
 export default function AdminDashboard({
   user,
@@ -64,25 +87,30 @@ export default function AdminDashboard({
   const [notices, setNotices] = useState<Notice[]>([]);
   const [events, setEvents] = useState<SchoolEvent[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   // Form state
   const [form, setForm] = useState<Record<string, string>>({});
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [nRes, eRes, aRes] = await Promise.all([
+      const [nRes, eRes, aRes, gRes] = await Promise.all([
         fetch("/api/notices"),
         fetch("/api/events"),
         fetch("/api/announcements"),
+        fetch("/api/gallery"),
       ]);
       setNotices(await nRes.json());
       setEvents(await eRes.json());
       setAnnouncements(await aRes.json());
+      setGalleryImages(await gRes.json());
     } catch (err) {
       console.error(err);
     } finally {
@@ -205,6 +233,83 @@ export default function AdminDashboard({
     }
   };
 
+  // --- Gallery CRUD ---
+  const handleImageUpload = async (file: File): Promise<string | null> => {
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.url;
+      } else {
+        const error = await res.json();
+        showStatus(error.error || "Upload failed!");
+        return null;
+      }
+    } catch (err) {
+      console.error(err);
+      showStatus("Upload failed!");
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const saveGalleryImage = async () => {
+    // If creating new, we need an image file
+    if (isCreating && !form.imageUrl) {
+      showStatus("Please select an image to upload!");
+      return;
+    }
+
+    let imageUrl = form.imageUrl || "";
+
+    // Handle file upload if a new file was selected
+    if (form.imageFile) {
+      const url = await handleImageUpload(form.imageFile as unknown as File);
+      if (!url) return;
+      imageUrl = url;
+    }
+
+    const payload = {
+      ...(editingItem ? { id: editingItem } : {}),
+      title: form.title || "",
+      category: form.category || "School Campus",
+      imageUrl,
+      alt: form.alt || form.title || "",
+      active: form.active !== "false",
+      order: form.order ? parseInt(form.order) : 0,
+    };
+
+    const res = await fetch("/api/gallery", {
+      method: editingItem ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (res.ok) {
+      showStatus(editingItem ? "Gallery image updated!" : "Gallery image added!");
+      setEditingItem(null);
+      setIsCreating(false);
+      setForm({});
+      fetchData();
+    }
+  };
+
+  const deleteGalleryImage = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this gallery image?")) return;
+    const res = await fetch(`/api/gallery?id=${id}`, { method: "DELETE" });
+    if (res.ok) {
+      showStatus("Gallery image deleted!");
+      fetchData();
+    }
+  };
+
   const startEdit = (item: Record<string, unknown>, type: AdminTab) => {
     setEditingItem(item.id as string);
     setIsCreating(false);
@@ -229,6 +334,16 @@ export default function AdminDashboard({
         category: e.category,
         active: String(e.active),
       });
+    } else if (type === "gallery") {
+      const g = item as GalleryImage;
+      setForm({
+        title: g.title,
+        category: g.category,
+        imageUrl: g.imageUrl,
+        alt: g.alt || "",
+        active: String(g.active),
+        order: String(g.order),
+      });
     } else {
       const a = item as Announcement;
       setForm({
@@ -244,7 +359,7 @@ export default function AdminDashboard({
     setActiveTab(type);
     setIsCreating(true);
     setEditingItem(null);
-    setForm({ active: "true", category: "General", priority: "normal", venue: "School Campus" });
+    setForm({ active: "true", category: type === "gallery" ? "School Campus" : "General", priority: "normal", venue: "School Campus" });
   };
 
   const cancelEdit = () => {
@@ -257,6 +372,7 @@ export default function AdminDashboard({
     { key: "notices", label: "Notices", icon: Bell },
     { key: "events", label: "Events", icon: Calendar },
     { key: "announcements", label: "Announcements", icon: Megaphone },
+    { key: "gallery", label: "Gallery", icon: Camera },
   ];
 
   return (
@@ -662,6 +778,188 @@ export default function AdminDashboard({
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* ====== GALLERY TAB ====== */}
+            {activeTab === "gallery" && (
+              <div className="space-y-4 animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-navy">Manage Gallery Images</h2>
+                  <Button
+                    onClick={() => startCreate("gallery")}
+                    className="bg-gold hover:bg-gold-dark text-white text-sm"
+                  >
+                    <Plus className="w-4 h-4 mr-1" /> Add Image
+                  </Button>
+                </div>
+
+                {/* Create/Edit form */}
+                {(isCreating || editingItem) && activeTab === "gallery" && (
+                  <div className="bg-white rounded-xl p-5 border border-gold/20 shadow-sm space-y-3">
+                    <h3 className="font-semibold text-navy text-sm">
+                      {editingItem ? "Edit Gallery Image" : "New Gallery Image"}
+                    </h3>
+
+                    {/* Image upload area */}
+                    <div
+                      className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-gold/50 transition-colors cursor-pointer"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      {form.imageUrl ? (
+                        <div className="space-y-2">
+                          <img
+                            src={form.imageUrl}
+                            alt="Preview"
+                            className="max-h-48 mx-auto rounded-lg object-contain"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Click to change image
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <Upload className="w-10 h-10 mx-auto text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground">
+                            Click to upload an image
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Supports JPEG, PNG, WebP, GIF (max 10MB)
+                          </p>
+                        </div>
+                      )}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            // Preview the file locally
+                            const reader = new FileReader();
+                            reader.onload = (ev) => {
+                              setForm({
+                                ...form,
+                                imageUrl: ev.target?.result as string,
+                                imageFile: file as unknown as string,
+                              });
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </div>
+
+                    {uploading && (
+                      <div className="text-center text-sm text-gold flex items-center justify-center gap-2">
+                        <div className="w-4 h-4 border-2 border-gold border-t-transparent rounded-full animate-spin" />
+                        Uploading image...
+                      </div>
+                    )}
+
+                    <input
+                      type="text"
+                      placeholder="Image Title"
+                      value={form.title || ""}
+                      onChange={(e) => setForm({ ...form, title: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Alt Text (description for accessibility)"
+                      value={form.alt || ""}
+                      onChange={(e) => setForm({ ...form, alt: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+                    />
+                    <div className="grid grid-cols-3 gap-3">
+                      <select
+                        value={form.category || "School Campus"}
+                        onChange={(e) => setForm({ ...form, category: e.target.value })}
+                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+                      >
+                        {galleryCategories.map((c) => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                      <input
+                        type="number"
+                        placeholder="Display Order"
+                        value={form.order || ""}
+                        onChange={(e) => setForm({ ...form, order: e.target.value })}
+                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+                      />
+                      <select
+                        value={form.active || "true"}
+                        onChange={(e) => setForm({ ...form, active: e.target.value })}
+                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+                      >
+                        <option value="true">Active</option>
+                        <option value="false">Inactive</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        onClick={saveGalleryImage}
+                        disabled={uploading}
+                        className="bg-navy hover:bg-navy-light text-white text-sm"
+                      >
+                        <Save className="w-4 h-4 mr-1" /> {uploading ? "Uploading..." : "Save"}
+                      </Button>
+                      <Button variant="outline" onClick={cancelEdit} className="text-sm">
+                        <X className="w-4 h-4 mr-1" /> Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Gallery image list */}
+                {galleryImages.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Camera className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                    <p className="text-muted-foreground">No gallery images yet. Add your first image!</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {galleryImages.map((img) => (
+                      <div
+                        key={img.id}
+                        className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden group"
+                      >
+                        <div className="relative h-48 overflow-hidden">
+                          <img
+                            src={img.imageUrl}
+                            alt={img.alt || img.title}
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-navy/0 group-hover:bg-navy/40 transition-all duration-300 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                            <button
+                              onClick={() => startEdit(img, "gallery")}
+                              className="p-2 bg-white/90 rounded-lg text-navy hover:text-gold transition-colors"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => deleteGalleryImage(img.id)}
+                              className="p-2 bg-white/90 rounded-lg text-navy hover:text-red-600 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <span className={`absolute top-2 right-2 text-[10px] px-2 py-0.5 rounded-full ${
+                            img.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                          }`}>
+                            {img.active ? "Active" : "Inactive"}
+                          </span>
+                        </div>
+                        <div className="p-3">
+                          <h3 className="text-sm font-semibold text-navy truncate">{img.title}</h3>
+                          <p className="text-xs text-muted-foreground mt-1">{img.category} · Order: {img.order}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </>
