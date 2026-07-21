@@ -64,9 +64,11 @@ export default function Header() {
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 lg:w-13 lg:h-13 bg-navy rounded-xl flex items-center justify-center shadow-md">
-              <GraduationCap className="w-6 h-6 lg:w-7 lg:h-7 text-gold" />
-            </div>
+            <img
+              src="/school-logo.png"
+              alt="Saint Mary School Logo"
+              className="w-11 h-11 lg:w-13 lg:h-13 rounded-xl shadow-md object-contain"
+            />
             <div>
               <h1 className="text-lg lg:text-xl font-bold text-navy leading-tight">
                 Saint Mary School

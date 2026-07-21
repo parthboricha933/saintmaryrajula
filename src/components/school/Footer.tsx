@@ -34,8 +34,8 @@ export default function Footer() {
           {/* School info */}
           <div className="lg:col-span-1">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-gold/20 rounded-xl flex items-center justify-center">
-                <GraduationCap className="w-7 h-7 text-gold" />
+              <div className="w-12 h-12 bg-gold/20 rounded-xl flex items-center justify-center p-1.5">
+                <img src="/school-logo.png" alt="Saint Mary School Logo" className="w-9 h-9 object-contain" />
               </div>
               <div>
                 <h3 className="text-lg font-bold text-white">
