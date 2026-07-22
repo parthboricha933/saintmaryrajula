@@ -11,8 +11,6 @@ import NoticesSection from "@/components/school/NoticesSection";
 import GallerySection from "@/components/school/GallerySection";
 import EnquirySection from "@/components/school/EnquirySection";
 import TeachersSection from "@/components/school/TeachersSection";
-import TeachersPage from "@/components/school/TeachersPage";
-import TeacherDetailPage from "@/components/school/TeacherDetailPage";
 import NoticesEventsPage from "@/components/school/NoticesEventsPage";
 import AdminLogin from "@/components/school/AdminLogin";
 import AdminDashboard from "@/components/school/AdminDashboard";
@@ -23,7 +21,6 @@ import LoadingScreen from "@/components/school/LoadingScreen";
 type View =
   | "home"
   | "teachers"
-  | "teacher-detail"
   | "notices-page"
   | "admin"
   | "admin-dashboard"
@@ -54,7 +51,6 @@ type TeacherData = {
 
 export default function Home() {
   const [currentView, setCurrentView] = useState<View>("home");
-  const [selectedTeacherId, setSelectedTeacherId] = useState<number | null>(null);
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [teacherUser, setTeacherUser] = useState<TeacherData | null>(null);
 
@@ -86,16 +82,6 @@ export default function Home() {
         if (el) el.scrollIntoView({ behavior: "smooth" });
       }, 200);
     }
-  };
-
-  const handleSelectTeacher = (id: number) => {
-    setSelectedTeacherId(id);
-    setCurrentView("teacher-detail");
-  };
-
-  const handleBackToTeachers = () => {
-    setSelectedTeacherId(null);
-    setCurrentView("teachers");
   };
 
   const handleAdminLogin = (user: AdminUser) => {
@@ -131,20 +117,12 @@ export default function Home() {
               <AboutSection />
               <FacilitiesSection />
               <GallerySection />
-              <TeachersSection />
               <NoticesSection />
               <EnquirySection />
             </>
           )}
           {currentView === "teachers" && (
-            <TeachersPage onSelectTeacher={handleSelectTeacher} />
-          )}
-          {currentView === "teacher-detail" && selectedTeacherId && (
-            <TeacherDetailPage
-              teacherId={selectedTeacherId}
-              onBack={handleBackToTeachers}
-              onNavigateHome={(section) => handleNavigate(section)}
-            />
+            <TeachersSection />
           )}
           {currentView === "notices-page" && <NoticesEventsPage />}
           {currentView === "admin" && <AdminLogin onLogin={handleAdminLogin} />}
