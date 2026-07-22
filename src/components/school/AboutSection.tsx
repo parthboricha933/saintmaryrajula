@@ -6,9 +6,9 @@ import { GraduationCap, Users, BookOpen, CheckCircle } from "lucide-react";
 
 const stats = [
   { icon: Users, value: "500+", label: "Students" },
-  { icon: GraduationCap, value: "25+", label: "Teachers" },
   { icon: BookOpen, value: "13+", label: "Years" },
   { icon: CheckCircle, value: "100%", label: "Results" },
+  { icon: GraduationCap, value: "GSEB", label: "Affiliated" },
 ];
 
 export default function AboutSection() {

@@ -7,6 +7,7 @@ import HeroSection from "@/components/school/HeroSection";
 import QuickCards from "@/components/school/QuickCards";
 import AboutSection from "@/components/school/AboutSection";
 import FacilitiesSection from "@/components/school/FacilitiesSection";
+import AdmissionsSection from "@/components/school/AdmissionsSection";
 import NoticesSection from "@/components/school/NoticesSection";
 import GallerySection from "@/components/school/GallerySection";
 import EnquirySection from "@/components/school/EnquirySection";
@@ -113,6 +114,7 @@ export default function Home() {
               <QuickCards />
               <AboutSection />
               <FacilitiesSection />
+              <AdmissionsSection />
               <GallerySection />
               <NoticesSection />
               <EnquirySection />
