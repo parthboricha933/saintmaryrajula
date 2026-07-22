@@ -6,19 +6,19 @@ const prisma = new PrismaClient();
 async function main() {
   // Create default admin user
   const existingAdmin = await prisma.user.findUnique({
-    where: { email: "admin@saintmaryrajula.edu.in" },
+    where: { email: "parthboricha933@gmail.com" },
   });
 
   if (!existingAdmin) {
     await prisma.user.create({
       data: {
-        email: "admin@saintmaryrajula.edu.in",
+        email: "parthboricha933@gmail.com",
         name: "School Admin",
-        password: hashSync("admin@123", 12),
+        password: hashSync("66666666", 12),
         role: "admin",
       },
     });
-    console.log("Admin user created: admin@saintmaryrajula.edu.in / admin@123");
+    console.log("Admin user created: parthboricha933@gmail.com / 66666666");
   } else {
     console.log("Admin user already exists");
   }

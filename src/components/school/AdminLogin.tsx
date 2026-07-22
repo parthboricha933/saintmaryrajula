@@ -70,7 +70,7 @@ export default function AdminLogin({
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@saintmaryrajula@gmail.com"
+                  placeholder="parthboricha933@gmail.com"
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30 focus:border-gold transition-colors"
                   required
                 />
