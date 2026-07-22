@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useInView } from "react-intersection-observer";
 import { teachers } from "@/data/school-data";
 import {
@@ -16,17 +16,41 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+type DBTeacher = {
+  id: string;
+  name: string;
+  designation: string;
+  subject: string;
+  qualification: string;
+  experience: number;
+  languages: string;
+  shortIntro: string;
+  teachingPhilosophy: string;
+  photo: string | null;
+  status: string;
+};
+
 function TeacherCard({
   teacher,
   index,
   inView,
   onSelect,
+  dbTeacher,
 }: {
   teacher: (typeof teachers)[0];
   index: number;
   inView: boolean;
   onSelect: (t: (typeof teachers)[0]) => void;
+  dbTeacher?: DBTeacher;
 }) {
+  const displayName = dbTeacher?.name || teacher.name;
+  const displayDesignation = dbTeacher?.designation || teacher.designation;
+  const displaySubject = dbTeacher?.subject || teacher.subject;
+  const displayQualification = dbTeacher?.qualification || teacher.qualification;
+  const displayExperience = dbTeacher?.experience || teacher.experience;
+  const displayIntro = dbTeacher?.shortIntro || teacher.shortIntro;
+  const displayPhoto = dbTeacher?.photo || null;
+
   return (
     <div
       className={`bg-white rounded-xl p-5 sm:p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:border-gold/20 hover:-translate-y-1 transition-all duration-300 cursor-pointer group ${
@@ -37,33 +61,37 @@ function TeacherCard({
     >
       {/* Photo */}
       <div className="w-20 h-20 sm:w-24 sm:h-24 bg-navy/5 rounded-xl mx-auto mb-4 flex items-center justify-center overflow-hidden group-hover:bg-gold/10 transition-colors">
-        <User className="w-10 h-10 sm:w-12 sm:h-12 text-navy/30 group-hover:text-gold/50 transition-colors" />
+        {displayPhoto ? (
+          <img src={displayPhoto} alt={displayName} className="w-full h-full object-cover rounded-xl" />
+        ) : (
+          <User className="w-10 h-10 sm:w-12 sm:h-12 text-navy/30 group-hover:text-gold/50 transition-colors" />
+        )}
       </div>
 
       <div className="text-center">
         <h3 className="text-base sm:text-lg font-semibold text-navy group-hover:text-gold transition-colors mb-0.5">
-          {teacher.name}
+          {displayName}
         </h3>
         <p className="text-xs sm:text-sm text-gold font-medium mb-1">
-          {teacher.designation}
+          {displayDesignation}
         </p>
         <p className="text-xs text-muted-foreground mb-3">
-          {teacher.subject}
+          {displaySubject}
         </p>
 
         <div className="flex items-center justify-center gap-3 text-xs text-muted-foreground mb-3">
           <span className="flex items-center gap-1">
             <GraduationCap className="w-3.5 h-3.5" />
-            {teacher.qualification}
+            {displayQualification}
           </span>
           <span className="flex items-center gap-1">
             <Clock className="w-3.5 h-3.5" />
-            {teacher.experience} yrs
+            {displayExperience} yrs
           </span>
         </div>
 
         <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-          {teacher.shortIntro}
+          {displayIntro}
         </p>
       </div>
     </div>
@@ -73,10 +101,22 @@ function TeacherCard({
 function TeacherProfile({
   teacher,
   onBack,
+  dbTeacher,
 }: {
   teacher: (typeof teachers)[0];
   onBack: () => void;
+  dbTeacher?: DBTeacher;
 }) {
+  const displayName = dbTeacher?.name || teacher.name;
+  const displayDesignation = dbTeacher?.designation || teacher.designation;
+  const displaySubject = dbTeacher?.subject || teacher.subject;
+  const displayQualification = dbTeacher?.qualification || teacher.qualification;
+  const displayExperience = dbTeacher?.experience || teacher.experience;
+  const displayLanguages = dbTeacher?.languages || teacher.languages;
+  const displayPhoto = dbTeacher?.photo || null;
+  const displayIntro = dbTeacher?.shortIntro || teacher.shortIntro;
+  const displayPhilosophy = dbTeacher?.teachingPhilosophy || teacher.teachingPhilosophy;
+
   return (
     <div className="animate-fade-in">
       <div className="max-w-4xl mx-auto">
@@ -93,28 +133,32 @@ function TeacherProfile({
           {/* Header section */}
           <div className="bg-navy p-6 sm:p-8">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-6">
-              <div className="w-28 h-28 sm:w-32 sm:h-32 bg-white/10 rounded-xl flex items-center justify-center shrink-0 border-2 border-gold/30">
-                <User className="w-16 h-16 text-white/40" />
+              <div className="w-28 h-28 sm:w-32 sm:h-32 bg-white/10 rounded-xl flex items-center justify-center shrink-0 border-2 border-gold/30 overflow-hidden">
+                {displayPhoto ? (
+                  <img src={displayPhoto} alt={displayName} className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-16 h-16 text-white/40" />
+                )}
               </div>
               <div className="text-center sm:text-left">
                 <h2 className="text-xl sm:text-2xl font-bold text-white mb-1">
-                  {teacher.name}
+                  {displayName}
                 </h2>
                 <p className="text-gold font-medium text-sm sm:text-base mb-2">
-                  {teacher.designation}
+                  {displayDesignation}
                 </p>
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 text-sm text-gray-300">
                   <span className="flex items-center gap-1.5">
                     <BookOpen className="w-4 h-4 text-gold" />
-                    {teacher.subject}
+                    {displaySubject}
                   </span>
                   <span className="flex items-center gap-1.5">
                     <GraduationCap className="w-4 h-4 text-gold" />
-                    {teacher.qualification}
+                    {displayQualification}
                   </span>
                   <span className="flex items-center gap-1.5">
                     <Clock className="w-4 h-4 text-gold" />
-                    {teacher.experience} Years Experience
+                    {displayExperience} Years Experience
                   </span>
                 </div>
               </div>
@@ -129,51 +173,66 @@ function TeacherProfile({
                 <Languages className="w-5 h-5 text-gold" />
                 Languages Known
               </h3>
-              <p className="text-muted-foreground text-sm">{teacher.languages}</p>
+              <p className="text-muted-foreground text-sm">{displayLanguages}</p>
             </div>
+
+            {/* Short Intro */}
+            {displayIntro && (
+              <div>
+                <h3 className="flex items-center gap-2 text-base font-semibold text-navy mb-2">
+                  <MessageSquare className="w-5 h-5 text-gold" />
+                  Introduction
+                </h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">{displayIntro}</p>
+              </div>
+            )}
 
             {/* Teaching Philosophy */}
             <div>
               <h3 className="flex items-center gap-2 text-base font-semibold text-navy mb-2">
-                <MessageSquare className="w-5 h-5 text-gold" />
+                <Award className="w-5 h-5 text-gold" />
                 Teaching Philosophy
               </h3>
               <p className="text-muted-foreground text-sm leading-relaxed">
-                {teacher.teachingPhilosophy}
+                {displayPhilosophy}
               </p>
             </div>
 
-            {/* Achievements */}
-            <div>
-              <h3 className="flex items-center gap-2 text-base font-semibold text-navy mb-3">
-                <Award className="w-5 h-5 text-gold" />
-                Achievements
-              </h3>
-              <ul className="space-y-2">
-                {teacher.achievements.map((achievement, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
-                    <span className="w-2 h-2 bg-gold rounded-full mt-1.5 shrink-0" />
-                    {achievement}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {/* Achievements (only from static data) */}
+            {!dbTeacher && teacher.achievements && (
+              <div>
+                <h3 className="flex items-center gap-2 text-base font-semibold text-navy mb-3">
+                  <Award className="w-5 h-5 text-gold" />
+                  Achievements
+                </h3>
+                <ul className="space-y-2">
+                  {teacher.achievements.map((achievement, i) => (
+                    <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                      <span className="w-2 h-2 bg-gold rounded-full mt-1.5 shrink-0" />
+                      {achievement}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-            {/* Certifications */}
-            <div>
-              <h3 className="flex items-center gap-2 text-base font-semibold text-navy mb-3">
-                <Verified className="w-5 h-5 text-gold" />
-                Certifications & Qualifications
-              </h3>
-              <ul className="space-y-2">
-                {teacher.certifications.map((cert, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
-                    <span className="w-2 h-2 bg-green-accent rounded-full mt-1.5 shrink-0" />
-                    {cert}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {/* Certifications (only from static data) */}
+            {!dbTeacher && teacher.certifications && (
+              <div>
+                <h3 className="flex items-center gap-2 text-base font-semibold text-navy mb-3">
+                  <Verified className="w-5 h-5 text-gold" />
+                  Certifications & Qualifications
+                </h3>
+                <ul className="space-y-2">
+                  {teacher.certifications.map((cert, i) => (
+                    <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                      <span className="w-2 h-2 bg-green-accent rounded-full mt-1.5 shrink-0" />
+                      {cert}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -185,7 +244,30 @@ export default function TeachersSection() {
   const [selectedTeacher, setSelectedTeacher] = useState<
     (typeof teachers)[0] | null
   >(null);
+  const [dbTeachers, setDbTeachers] = useState<DBTeacher[]>([]);
   const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.05 });
+
+  useEffect(() => {
+    // Fetch approved teachers from database
+    fetch("/api/teachers")
+      .then(res => res.json())
+      .then(data => setDbTeachers(data))
+      .catch(err => console.error("Error fetching teachers:", err));
+  }, []);
+
+  // Merge static teachers with DB teachers
+  // DB teachers override matching static ones by name, new DB teachers are added
+  const allTeachers = [...teachers, ...dbTeachers.filter(
+    dbT => !teachers.some(st => st.name === dbT.name)
+  )];
+
+  // Map DB teacher data for display
+  const dbTeacherMap = new Map<string, DBTeacher>();
+  dbTeachers.forEach(dbT => {
+    dbTeacherMap.set(dbT.name, dbT);
+    // Also map by id for matching
+    dbTeacherMap.set(dbT.id, dbT);
+  });
 
   return (
     <section id="teachers" className="py-16 lg:py-24 bg-secondary/50">
@@ -194,6 +276,7 @@ export default function TeachersSection() {
           <TeacherProfile
             teacher={selectedTeacher}
             onBack={() => setSelectedTeacher(null)}
+            dbTeacher={dbTeacherMap.get(selectedTeacher.name)}
           />
         ) : (
           <>
@@ -215,13 +298,14 @@ export default function TeachersSection() {
 
             {/* Teachers grid */}
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
-              {teachers.map((teacher, index) => (
+              {allTeachers.map((teacher, index) => (
                 <TeacherCard
                   key={teacher.id}
                   teacher={teacher}
                   index={index}
                   inView={inView}
                   onSelect={setSelectedTeacher}
+                  dbTeacher={dbTeacherMap.get(teacher.name)}
                 />
               ))}
             </div>

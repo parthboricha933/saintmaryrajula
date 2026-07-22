@@ -20,7 +20,7 @@ const navItems = [
   { label: "Contact", href: "contact" },
 ];
 
-const separateViews = ["teachers", "notices-page", "admin"];
+const separateViews = ["teachers", "notices-page", "admin", "teacher-login"];
 
 export default function Header({ onNavigate, currentView }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -130,7 +130,13 @@ export default function Header({ onNavigate, currentView }: HeaderProps) {
               </button>
             ))}
             <Button
-              className="ml-3 bg-gold hover:bg-gold-dark text-white font-semibold px-5 rounded-lg shadow-md hover:shadow-lg transition-all text-sm"
+              className="ml-2 bg-green-accent hover:bg-green-accent/90 text-white font-semibold px-4 rounded-lg shadow-md hover:shadow-lg transition-all text-sm"
+              onClick={() => handleNavClick("teacher-login")}
+            >
+              Teacher
+            </Button>
+            <Button
+              className="ml-1 bg-gold hover:bg-gold-dark text-white font-semibold px-5 rounded-lg shadow-md hover:shadow-lg transition-all text-sm"
               onClick={() => handleNavClick("admin")}
             >
               Admin
@@ -170,6 +176,12 @@ export default function Header({ onNavigate, currentView }: HeaderProps) {
               </button>
             ))}
             <div className="pt-2">
+              <Button
+                className="w-full bg-green-accent hover:bg-green-accent/90 text-white font-semibold rounded-lg text-sm mb-2"
+                onClick={() => handleNavClick("teacher-login")}
+              >
+                Teacher Panel
+              </Button>
               <Button
                 className="w-full bg-navy hover:bg-navy-light text-white font-semibold rounded-lg text-sm"
                 onClick={() => handleNavClick("admin")}

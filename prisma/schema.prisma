@@ -91,3 +91,21 @@ model GalleryImage {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model Teacher {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  name              String
+  designation        String   @default("Teacher")
+  subject           String   @default("General")
+  qualification     String   @default("")
+  experience        Int      @default(0)
+  languages         String   @default("English, Hindi, Gujarati")
+  shortIntro        String   @default("")
+  teachingPhilosophy String  @default("")
+  photo             String?
+  googleId          String?
+  status            String   @default("pending")  // pending, approved, rejected
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}

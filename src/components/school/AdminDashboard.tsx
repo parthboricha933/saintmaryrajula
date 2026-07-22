@@ -21,6 +21,7 @@ import {
   Phone,
   User,
   Clock,
+  GraduationCap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -77,7 +78,24 @@ type Enquiry = {
   createdAt: string;
 };
 
-type AdminTab = "notices" | "events" | "announcements" | "gallery" | "enquiries";
+type AdminTab = "notices" | "events" | "announcements" | "gallery" | "enquiries" | "teachers";
+
+type TeacherData = {
+  id: string;
+  email: string;
+  name: string;
+  designation: string;
+  subject: string;
+  qualification: string;
+  experience: number;
+  languages: string;
+  shortIntro: string;
+  teachingPhilosophy: string;
+  photo: string | null;
+  googleId: string | null;
+  status: string;
+  createdAt: string;
+};
 
 const noticeCategories = ["General", "Academic", "Event", "Holiday"];
 const eventCategories = ["General", "Celebration", "Sports", "Academic", "Cultural"];
@@ -108,6 +126,7 @@ export default function AdminDashboard({
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
+  const [teachers, setTeachers] = useState<TeacherData[]>([]);
   const [enquiryFilter, setEnquiryFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [editingItem, setEditingItem] = useState<string | null>(null);
@@ -122,18 +141,20 @@ export default function AdminDashboard({
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [nRes, eRes, aRes, gRes, eqRes] = await Promise.all([
+      const [nRes, eRes, aRes, gRes, eqRes, tRes] = await Promise.all([
         fetch("/api/notices"),
         fetch("/api/events"),
         fetch("/api/announcements"),
         fetch("/api/gallery"),
         fetch("/api/enquiries"),
+        fetch("/api/teachers?all=true"),
       ]);
       setNotices(await nRes.json());
       setEvents(await eRes.json());
       setAnnouncements(await aRes.json());
       setGalleryImages(await gRes.json());
       if (eqRes.ok) setEnquiries(await eqRes.json());
+      if (tRes.ok) setTeachers(await tRes.json());
     } catch (err) {
       console.error(err);
     } finally {
@@ -419,6 +440,7 @@ export default function AdminDashboard({
     { key: "announcements", label: "Announcements", icon: Megaphone },
     { key: "gallery", label: "Gallery", icon: Camera },
     { key: "enquiries", label: "Enquiries", icon: MessageSquare },
+    { key: "teachers", label: "Teachers", icon: User },
   ];
 
   return (
@@ -1128,6 +1150,208 @@ export default function AdminDashboard({
                         </div>
                       </div>
                     ))
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Teachers / Teacher Approval Tab */}
+        {activeTab === "teachers" && (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-navy">Teacher Approvals</h2>
+              <div className="flex items-center gap-2">
+                {teachers.filter(t => t.status === "pending").length > 0 && (
+                  <span className="bg-yellow-100 text-yellow-700 text-xs px-2 py-1 rounded-full font-medium">
+                    {teachers.filter(t => t.status === "pending").length} pending
+                  </span>
+                )}
+                {teachers.filter(t => t.status === "approved").length > 0 && (
+                  <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full font-medium">
+                    {teachers.filter(t => t.status === "approved").length} approved
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {teachers.length === 0 ? (
+              <div className="bg-white rounded-lg p-8 text-center border border-gray-100">
+                <User className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-muted-foreground text-sm">No teacher registrations yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {/* Pending teachers first */}
+                {teachers.filter(t => t.status === "pending").length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="text-sm font-semibold text-yellow-700 mb-2 flex items-center gap-2">
+                      <Clock className="w-4 h-4" /> Pending Approval
+                    </h3>
+                    {teachers.filter(t => t.status === "pending").map((teacher) => (
+                      <div key={teacher.id} className="bg-white rounded-lg p-4 border border-yellow-100 hover:border-yellow-200 transition-colors mb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3">
+                            <div className="w-12 h-12 bg-navy/5 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
+                              {teacher.photo ? (
+                                <img src={teacher.photo} alt={teacher.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <User className="w-6 h-6 text-navy/30" />
+                              )}
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-navy text-sm">{teacher.name}</h3>
+                              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                                <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded">{teacher.designation}</span>
+                                <span className="bg-gray-50 text-gray-600 px-2 py-0.5 rounded">{teacher.subject}</span>
+                              </div>
+                              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                                <Mail className="w-3 h-3" /> {teacher.email}
+                                <GraduationCap className="w-3 h-3" /> {teacher.qualification}
+                                <Clock className="w-3 h-3" /> {teacher.experience} yrs
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button size="sm" onClick={async () => {
+                              try {
+                                const res = await fetch("/api/teachers", {
+                                  method: "PUT",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ id: teacher.id, action: "approve" }),
+                                });
+                                if (res.ok) {
+                                  fetchData();
+                                  showStatus("Teacher approved successfully!");
+                                }
+                              } catch (err) { console.error(err); }
+                            }} className="bg-green-accent hover:bg-green-accent/90 text-white text-xs">
+                              <CheckCircle className="w-3.5 h-3.5 mr-1" /> Approve
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={async () => {
+                              try {
+                                const res = await fetch("/api/teachers", {
+                                  method: "PUT",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ id: teacher.id, action: "reject" }),
+                                });
+                                if (res.ok) {
+                                  fetchData();
+                                  showStatus("Teacher rejected.");
+                                }
+                              } catch (err) { console.error(err); }
+                            }} className="text-red-600 border-red-200 hover:bg-red-50 text-xs">
+                              <X className="w-3.5 h-3.5 mr-1" /> Reject
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Approved teachers */}
+                {teachers.filter(t => t.status === "approved").length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="text-sm font-semibold text-green-700 mb-2 flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4" /> Approved Teachers
+                    </h3>
+                    {teachers.filter(t => t.status === "approved").map((teacher) => (
+                      <div key={teacher.id} className="bg-white rounded-lg p-4 border border-green-100 hover:border-green-200 transition-colors mb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3">
+                            <div className="w-12 h-12 bg-green-accent/5 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
+                              {teacher.photo ? (
+                                <img src={teacher.photo} alt={teacher.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <User className="w-6 h-6 text-green-accent/30" />
+                              )}
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-navy text-sm flex items-center gap-2">
+                                {teacher.name}
+                                <span className="text-xs text-green-600">✓ Approved</span>
+                              </h3>
+                              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                                <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded">{teacher.designation}</span>
+                                <span className="bg-gray-50 text-gray-600 px-2 py-0.5 rounded">{teacher.subject}</span>
+                              </div>
+                              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                                <Mail className="w-3 h-3" /> {teacher.email}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button variant="outline" size="sm" onClick={async () => {
+                              try {
+                                const res = await fetch("/api/teachers", {
+                                  method: "PUT",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ id: teacher.id, action: "reject" }),
+                                });
+                                if (res.ok) { fetchData(); showStatus("Teacher access revoked."); }
+                              } catch (err) { console.error(err); }
+                            }} className="text-red-600 border-red-200 hover:bg-red-50 text-xs">
+                              Revoke
+                            </Button>
+                            <button onClick={async () => {
+                              try {
+                                await fetch(`/api/teachers?id=${teacher.id}`, { method: "DELETE" });
+                                fetchData();
+                                showStatus("Teacher deleted.");
+                              } catch (err) { console.error(err); }
+                            }} className="p-1.5 text-navy hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Rejected teachers */}
+                {teachers.filter(t => t.status === "rejected").length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-red-700 mb-2 flex items-center gap-2">
+                      <X className="w-4 h-4" /> Rejected
+                    </h3>
+                    {teachers.filter(t => t.status === "rejected").map((teacher) => (
+                      <div key={teacher.id} className="bg-white rounded-lg p-4 border border-red-100 hover:border-red-200 transition-colors mb-3 opacity-60">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="font-semibold text-navy text-sm">{teacher.name}</h3>
+                            <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                              <span>{teacher.email}</span>
+                              <span className="text-red-600">Rejected</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button variant="outline" size="sm" onClick={async () => {
+                              try {
+                                const res = await fetch("/api/teachers", {
+                                  method: "PUT",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ id: teacher.id, action: "approve" }),
+                                });
+                                if (res.ok) { fetchData(); showStatus("Teacher re-approved."); }
+                              } catch (err) { console.error(err); }
+                            }} className="text-green-accent border-green-accent/20 hover:bg-green-accent/5 text-xs">
+                              Re-approve
+                            </Button>
+                            <button onClick={async () => {
+                              try {
+                                await fetch(`/api/teachers?id=${teacher.id}`, { method: "DELETE" });
+                                fetchData();
+                              } catch (err) { console.error(err); }
+                            }} className="p-1.5 text-navy hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             )}

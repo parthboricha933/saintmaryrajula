@@ -1,0 +1,1140 @@
+     1→     1→"use client";
+     2→     2→
+     3→     3→import { useState, useEffect, useRef } from "react";
+     4→     4→import {
+     5→     5→  Bell,
+     6→     6→  Calendar,
+     7→     7→  Megaphone,
+     8→     8→  Plus,
+     9→     9→  Pencil,
+    10→    10→  Trash2,
+    11→    11→  Save,
+    12→    12→  X,
+    13→    13→  LogOut,
+    14→    14→  LayoutDashboard,
+    15→    15→  CheckCircle,
+    16→    16→  Camera,
+    17→    17→  Upload,
+    18→    18→  Image as ImageIcon,
+    19→    19→  MessageSquare,
+    20→    20→  Mail,
+    21→    21→  Phone,
+    22→    22→  User,
+    23→    23→  Clock,
+    24→    24→} from "lucide-react";
+    25→    25→import { Button } from "@/components/ui/button";
+    26→    26→
+    27→    27→type AdminUser = { id: string; email: string; name: string; role: string };
+    28→    28→
+    29→    29→type Notice = {
+    30→    30→  id: string;
+    31→    31→  title: string;
+    32→    32→  content: string;
+    33→    33→  category: string;
+    34→    34→  date: string;
+    35→    35→  active: boolean;
+    36→    36→};
+    37→    37→
+    38→    38→type SchoolEvent = {
+    39→    39→  id: string;
+    40→    40→  title: string;
+    41→    41→  description: string;
+    42→    42→  date: string;
+    43→    43→  endTime: string | null;
+    44→    44→  venue: string;
+    45→    45→  category: string;
+    46→    46→  active: boolean;
+    47→    47→};
+    48→    48→
+    49→    49→type Announcement = {
+    50→    50→  id: string;
+    51→    51→  title: string;
+    52→    52→  content: string;
+    53→    53→  priority: string;
+    54→    54→  active: boolean;
+    55→    55→  createdAt: string;
+    56→    56→};
+    57→    57→
+    58→    58→type GalleryImage = {
+    59→    59→  id: string;
+    60→    60→  title: string;
+    61→    61→  category: string;
+    62→    62→  imageUrl: string;
+    63→    63→  alt: string | null;
+    64→    64→  active: boolean;
+    65→    65→  order: number;
+    66→    66→  createdAt: string;
+    67→    67→};
+    68→    68→
+    69→    69→type Enquiry = {
+    70→    70→  id: string;
+    71→    71→  name: string;
+    72→    72→  email: string;
+    73→    73→  phone: string;
+    74→    74→  class: string;
+    75→    75→  message: string | null;
+    76→    76→  status: string;
+    77→    77→  createdAt: string;
+    78→    78→};
+    79→    79→
+    80→    80→type AdminTab = "notices" | "events" | "announcements" | "gallery" | "enquiries";
+    81→    81→
+    82→    82→const noticeCategories = ["General", "Academic", "Event", "Holiday"];
+    83→    83→const eventCategories = ["General", "Celebration", "Sports", "Academic", "Cultural"];
+    84→    84→const priorityOptions = ["normal", "high"];
+    85→    85→const galleryCategories = [
+    86→    86→  "Classrooms",
+    87→    87→  "Annual Function",
+    88→    88→  "Sports Day",
+    89→    89→  "Science Activities",
+    90→    90→  "Cultural Events",
+    91→    91→  "School Campus",
+    92→    92→  "Celebrations",
+    93→    93→];
+    94→    94→
+    95→    95→const enquiryStatuses = ["pending", "contacted", "admitted", "closed"];
+    96→    96→const classOptions = ["Nursery", "JKG", "SKG", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8"];
+    97→    97→
+    98→    98→export default function AdminDashboard({
+    99→    99→  user,
+   100→   100→  onLogout,
+   101→   101→}: {
+   102→   102→  user: AdminUser;
+   103→   103→  onLogout: () => void;
+   104→   104→}) {
+   105→   105→  const [activeTab, setActiveTab] = useState<AdminTab>("notices");
+   106→   106→  const [notices, setNotices] = useState<Notice[]>([]);
+   107→   107→  const [events, setEvents] = useState<SchoolEvent[]>([]);
+   108→   108→  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+   109→   109→  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+   110→   110→  const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
+   111→   111→  const [enquiryFilter, setEnquiryFilter] = useState<string>("all");
+   112→   112→  const [loading, setLoading] = useState(true);
+   113→   113→  const [editingItem, setEditingItem] = useState<string | null>(null);
+   114→   114→  const [isCreating, setIsCreating] = useState(false);
+   115→   115→  const [saveStatus, setSaveStatus] = useState<string | null>(null);
+   116→   116→  const [uploading, setUploading] = useState(false);
+   117→   117→
+   118→   118→  // Form state
+   119→   119→  const [form, setForm] = useState<Record<string, string>>({});
+   120→   120→  const fileInputRef = useRef<HTMLInputElement>(null);
+   121→   121→
+   122→   122→  const fetchData = async () => {
+   123→   123→    setLoading(true);
+   124→   124→    try {
+   125→   125→      const [nRes, eRes, aRes, gRes, eqRes] = await Promise.all([
+   126→   126→        fetch("/api/notices"),
+   127→   127→        fetch("/api/events"),
+   128→   128→        fetch("/api/announcements"),
+   129→   129→        fetch("/api/gallery"),
+   130→   130→        fetch("/api/enquiries"),
+   131→   131→      ]);
+   132→   132→      setNotices(await nRes.json());
+   133→   133→      setEvents(await eRes.json());
+   134→   134→      setAnnouncements(await aRes.json());
+   135→   135→      setGalleryImages(await gRes.json());
+   136→   136→      if (eqRes.ok) setEnquiries(await eqRes.json());
+   137→   137→    } catch (err) {
+   138→   138→      console.error(err);
+   139→   139→    } finally {
+   140→   140→      setLoading(false);
+   141→   141→    }
+   142→   142→  };
+   143→   143→
+   144→   144→  useEffect(() => {
+   145→   145→    fetchData();
+   146→   146→  }, []);
+   147→   147→
+   148→   148→  const showStatus = (msg: string) => {
+   149→   149→    setSaveStatus(msg);
+   150→   150→    setTimeout(() => setSaveStatus(null), 3000);
+   151→   151→  };
+   152→   152→
+   153→   153→  // --- Notices CRUD ---
+   154→   154→  const saveNotice = async () => {
+   155→   155→    const payload = {
+   156→   156→      ...(editingItem ? { id: editingItem } : {}),
+   157→   157→      title: form.title || "",
+   158→   158→      content: form.content || "",
+   159→   159→      category: form.category || "General",
+   160→   160→      date: form.date || new Date().toISOString(),
+   161→   161→      active: form.active !== "false",
+   162→   162→    };
+   163→   163→
+   164→   164→    const res = await fetch("/api/notices", {
+   165→   165→      method: editingItem ? "PUT" : "POST",
+   166→   166→      headers: { "Content-Type": "application/json" },
+   167→   167→      body: JSON.stringify(payload),
+   168→   168→    });
+   169→   169→
+   170→   170→    if (res.ok) {
+   171→   171→      showStatus(editingItem ? "Notice updated!" : "Notice created!");
+   172→   172→      setEditingItem(null);
+   173→   173→      setIsCreating(false);
+   174→   174→      setForm({});
+   175→   175→      fetchData();
+   176→   176→    }
+   177→   177→  };
+   178→   178→
+   179→   179→  const deleteNotice = async (id: string) => {
+   180→   180→    if (!confirm("Are you sure you want to delete this notice?")) return;
+   181→   181→    const res = await fetch(`/api/notices?id=${id}`, { method: "DELETE" });
+   182→   182→    if (res.ok) {
+   183→   183→      showStatus("Notice deleted!");
+   184→   184→      fetchData();
+   185→   185→    }
+   186→   186→  };
+   187→   187→
+   188→   188→  // --- Events CRUD ---
+   189→   189→  const saveEvent = async () => {
+   190→   190→    const payload = {
+   191→   191→      ...(editingItem ? { id: editingItem } : {}),
+   192→   192→      title: form.title || "",
+   193→   193→      description: form.description || "",
+   194→   194→      date: form.date || new Date().toISOString(),
+   195→   195→      endTime: form.endTime || null,
+   196→   196→      venue: form.venue || "School Campus",
+   197→   197→      category: form.category || "General",
+   198→   198→      active: form.active !== "false",
+   199→   199→    };
+   200→   200→
+   201→   201→    const res = await fetch("/api/events", {
+   202→   202→      method: editingItem ? "PUT" : "POST",
+   203→   203→      headers: { "Content-Type": "application/json" },
+   204→   204→      body: JSON.stringify(payload),
+   205→   205→    });
+   206→   206→
+   207→   207→    if (res.ok) {
+   208→   208→      showStatus(editingItem ? "Event updated!" : "Event created!");
+   209→   209→      setEditingItem(null);
+   210→   210→      setIsCreating(false);
+   211→   211→      setForm({});
+   212→   212→      fetchData();
+   213→   213→    }
+   214→   214→  };
+   215→   215→
+   216→   216→  const deleteEvent = async (id: string) => {
+   217→   217→    if (!confirm("Are you sure you want to delete this event?")) return;
+   218→   218→    const res = await fetch(`/api/events?id=${id}`, { method: "DELETE" });
+   219→   219→    if (res.ok) {
+   220→   220→      showStatus("Event deleted!");
+   221→   221→      fetchData();
+   222→   222→    }
+   223→   223→  };
+   224→   224→
+   225→   225→  // --- Announcements CRUD ---
+   226→   226→  const saveAnnouncement = async () => {
+   227→   227→    const payload = {
+   228→   228→      ...(editingItem ? { id: editingItem } : {}),
+   229→   229→      title: form.title || "",
+   230→   230→      content: form.content || "",
+   231→   231→      priority: form.priority || "normal",
+   232→   232→      active: form.active !== "false",
+   233→   233→    };
+   234→   234→
+   235→   235→    const res = await fetch("/api/announcements", {
+   236→   236→      method: editingItem ? "PUT" : "POST",
+   237→   237→      headers: { "Content-Type": "application/json" },
+   238→   238→      body: JSON.stringify(payload),
+   239→   239→    });
+   240→   240→
+   241→   241→    if (res.ok) {
+   242→   242→      showStatus(editingItem ? "Announcement updated!" : "Announcement created!");
+   243→   243→      setEditingItem(null);
+   244→   244→      setIsCreating(false);
+   245→   245→      setForm({});
+   246→   246→      fetchData();
+   247→   247→    }
+   248→   248→  };
+   249→   249→
+   250→   250→  const deleteAnnouncement = async (id: string) => {
+   251→   251→    if (!confirm("Are you sure you want to delete this announcement?")) return;
+   252→   252→    const res = await fetch(`/api/announcements?id=${id}`, { method: "DELETE" });
+   253→   253→    if (res.ok) {
+   254→   254→      showStatus("Announcement deleted!");
+   255→   255→      fetchData();
+   256→   256→    }
+   257→   257→  };
+   258→   258→
+   259→   259→  // --- Gallery CRUD ---
+   260→   260→  const handleImageUpload = async (file: File): Promise<string | null> => {
+   261→   261→    setUploading(true);
+   262→   262→    try {
+   263→   263→      const formData = new FormData();
+   264→   264→      formData.append("file", file);
+   265→   265→      const res = await fetch("/api/upload", {
+   266→   266→        method: "POST",
+   267→   267→        body: formData,
+   268→   268→      });
+   269→   269→      if (res.ok) {
+   270→   270→        const data = await res.json();
+   271→   271→        return data.url;
+   272→   272→      } else {
+   273→   273→        const error = await res.json();
+   274→   274→        showStatus(error.error || "Upload failed!");
+   275→   275→        return null;
+   276→   276→      }
+   277→   277→    } catch (err) {
+   278→   278→      console.error(err);
+   279→   279→      showStatus("Upload failed!");
+   280→   280→      return null;
+   281→   281→    } finally {
+   282→   282→      setUploading(false);
+   283→   283→    }
+   284→   284→  };
+   285→   285→
+   286→   286→  const saveGalleryImage = async () => {
+   287→   287→    // If creating new, we need an image file
+   288→   288→    if (isCreating && !form.imageUrl) {
+   289→   289→      showStatus("Please select an image to upload!");
+   290→   290→      return;
+   291→   291→    }
+   292→   292→
+   293→   293→    let imageUrl = form.imageUrl || "";
+   294→   294→
+   295→   295→    // Handle file upload if a new file was selected
+   296→   296→    if (form.imageFile) {
+   297→   297→      const url = await handleImageUpload(form.imageFile as unknown as File);
+   298→   298→      if (!url) return;
+   299→   299→      imageUrl = url;
+   300→   300→    }
+   301→   301→
+   302→   302→    const payload = {
+   303→   303→      ...(editingItem ? { id: editingItem } : {}),
+   304→   304→      title: form.title || "",
+   305→   305→      category: form.category || "School Campus",
+   306→   306→      imageUrl,
+   307→   307→      alt: form.alt || form.title || "",
+   308→   308→      active: form.active !== "false",
+   309→   309→      order: form.order ? parseInt(form.order) : 0,
+   310→   310→    };
+   311→   311→
+   312→   312→    const res = await fetch("/api/gallery", {
+   313→   313→      method: editingItem ? "PUT" : "POST",
+   314→   314→      headers: { "Content-Type": "application/json" },
+   315→   315→      body: JSON.stringify(payload),
+   316→   316→    });
+   317→   317→
+   318→   318→    if (res.ok) {
+   319→   319→      showStatus(editingItem ? "Gallery image updated!" : "Gallery image added!");
+   320→   320→      setEditingItem(null);
+   321→   321→      setIsCreating(false);
+   322→   322→      setForm({});
+   323→   323→      fetchData();
+   324→   324→    }
+   325→   325→  };
+   326→   326→
+   327→   327→  const deleteGalleryImage = async (id: string) => {
+   328→   328→    if (!confirm("Are you sure you want to delete this gallery image?")) return;
+   329→   329→    const res = await fetch(`/api/gallery?id=${id}`, { method: "DELETE" });
+   330→   330→    if (res.ok) {
+   331→   331→      showStatus("Gallery image deleted!");
+   332→   332→      fetchData();
+   333→   333→    }
+   334→   334→  };
+   335→   335→
+   336→   336→  // --- Enquiries ---
+   337→   337→  const updateEnquiryStatus = async (id: string, status: string) => {
+   338→   338→    const res = await fetch("/api/enquiries", {
+   339→   339→      method: "PUT",
+   340→   340→      headers: { "Content-Type": "application/json" },
+   341→   341→      body: JSON.stringify({ id, status }),
+   342→   342→    });
+   343→   343→    if (res.ok) {
+   344→   344→      showStatus(`Enquiry marked as ${status}!`);
+   345→   345→      fetchData();
+   346→   346→    }
+   347→   347→  };
+   348→   348→
+   349→   349→  const deleteEnquiry = async (id: string) => {
+   350→   350→    if (!confirm("Are you sure you want to delete this enquiry?")) return;
+   351→   351→    const res = await fetch(`/api/enquiries?id=${id}`, { method: "DELETE" });
+   352→   352→    if (res.ok) {
+   353→   353→      showStatus("Enquiry deleted!");
+   354→   354→      fetchData();
+   355→   355→    }
+   356→   356→  };
+   357→   357→
+   358→   358→  const startEdit = (item: Record<string, unknown>, type: AdminTab) => {
+   359→   359→    setEditingItem(item.id as string);
+   360→   360→    setIsCreating(false);
+   361→   361→    setActiveTab(type);
+   362→   362→    if (type === "notices") {
+   363→   363→      const n = item as Notice;
+   364→   364→      setForm({
+   365→   365→        title: n.title,
+   366→   366→        content: n.content,
+   367→   367→        category: n.category,
+   368→   368→        date: n.date ? new Date(n.date).toISOString().split("T")[0] : "",
+   369→   369→        active: String(n.active),
+   370→   370→      });
+   371→   371→    } else if (type === "events") {
+   372→   372→      const e = item as SchoolEvent;
+   373→   373→      setForm({
+   374→   374→        title: e.title,
+   375→   375→        description: e.description,
+   376→   376→        date: e.date ? new Date(e.date).toISOString().split("T")[0] + "T09:00" : "",
+   377→   377→        endTime: e.endTime ? new Date(e.endTime!).toISOString().split("T")[0] + "T12:00" : "",
+   378→   378→        venue: e.venue,
+   379→   379→        category: e.category,
+   380→   380→        active: String(e.active),
+   381→   381→      });
+   382→   382→    } else if (type === "gallery") {
+   383→   383→      const g = item as GalleryImage;
+   384→   384→      setForm({
+   385→   385→        title: g.title,
+   386→   386→        category: g.category,
+   387→   387→        imageUrl: g.imageUrl,
+   388→   388→        alt: g.alt || "",
+   389→   389→        active: String(g.active),
+   390→   390→        order: String(g.order),
+   391→   391→      });
+   392→   392→    } else {
+   393→   393→      const a = item as Announcement;
+   394→   394→      setForm({
+   395→   395→        title: a.title,
+   396→   396→        content: a.content,
+   397→   397→        priority: a.priority,
+   398→   398→        active: String(a.active),
+   399→   399→      });
+   400→   400→    }
+   401→   401→  };
+   402→   402→
+   403→   403→  const startCreate = (type: AdminTab) => {
+   404→   404→    setActiveTab(type);
+   405→   405→    setIsCreating(true);
+   406→   406→    setEditingItem(null);
+   407→   407→    setForm({ active: "true", category: type === "gallery" ? "School Campus" : "General", priority: "normal", venue: "School Campus" });
+   408→   408→  };
+   409→   409→
+   410→   410→  const cancelEdit = () => {
+   411→   411→    setEditingItem(null);
+   412→   412→    setIsCreating(false);
+   413→   413→    setForm({});
+   414→   414→  };
+   415→   415→
+   416→   416→  const tabs: { key: AdminTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+   417→   417→    { key: "notices", label: "Notices", icon: Bell },
+   418→   418→    { key: "events", label: "Events", icon: Calendar },
+   419→   419→    { key: "announcements", label: "Announcements", icon: Megaphone },
+   420→   420→    { key: "gallery", label: "Gallery", icon: Camera },
+   421→   421→    { key: "enquiries", label: "Enquiries", icon: MessageSquare },
+   422→   422→  ];
+   423→   423→
+   424→   424→  return (
+   425→   425→    <div className="pt-28 sm:pt-32 pb-16 min-h-screen bg-secondary/30">
+   426→   426→      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+   427→   427→        {/* Header */}
+   428→   428→        <div className="flex items-center justify-between mb-6">
+   429→   429→          <div>
+   430→   430→            <h1 className="text-2xl sm:text-3xl font-bold text-navy flex items-center gap-2">
+   431→   431→              <LayoutDashboard className="w-7 h-7 text-gold" />
+   432→   432→              Admin Panel
+   433→   433→            </h1>
+   434→   434→            <p className="text-sm text-muted-foreground mt-1">
+   435→   435→              Welcome, {user.name || user.email}
+   436→   436→            </p>
+   437→   437→          </div>
+   438→   438→          <Button
+   439→   439→            variant="outline"
+   440→   440→            onClick={onLogout}
+   441→   441→            className="text-navy hover:text-red-600 hover:border-red-200"
+   442→   442→          >
+   443→   443→            <LogOut className="w-4 h-4 mr-2" />
+   444→   444→            Logout
+   445→   445→          </Button>
+   446→   446→        </div>
+   447→   447→
+   448→   448→        {/* Status message */}
+   449→   449→        {saveStatus && (
+   450→   450→          <div className="mb-4 bg-green-50 text-green-700 text-sm p-3 rounded-lg border border-green-200 flex items-center gap-2 animate-fade-in">
+   451→   451→            <CheckCircle className="w-4 h-4" />
+   452→   452→            {saveStatus}
+   453→   453→          </div>
+   454→   454→        )}
+   455→   455→
+   456→   456→        {/* Tab navigation */}
+   457→   457→        <div className="flex items-center gap-2 mb-6 overflow-x-auto">
+   458→   458→          {tabs.map((tab) => {
+   459→   459→            const Icon = tab.icon;
+   460→   460→            return (
+   461→   461→              <button
+   462→   462→                key={tab.key}
+   463→   463→                onClick={() => {
+   464→   464→                  setActiveTab(tab.key);
+   465→   465→                  cancelEdit();
+   466→   466→                }}
+   467→   467→                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+   468→   468→                  activeTab === tab.key
+   469→   469→                    ? "bg-navy text-white shadow-md"
+   470→   470→                    : "bg-white text-navy hover:bg-navy/5 border border-gray-100"
+   471→   471→                }`}
+   472→   472→              >
+   473→   473→                <Icon className="w-4 h-4" />
+   474→   474→                {tab.label}
+   475→   475→              </button>
+   476→   476→            );
+   477→   477→          })}
+   478→   478→        </div>
+   479→   479→
+   480→   480→        {loading ? (
+   481→   481→          <div className="text-center py-12">
+   482→   482→            <div className="w-8 h-8 border-2 border-navy border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+   483→   483→            <p className="text-muted-foreground text-sm">Loading data...</p>
+   484→   484→          </div>
+   485→   485→        ) : (
+   486→   486→          <>
+   487→   487→            {/* ====== NOTICES TAB ====== */}
+   488→   488→            {activeTab === "notices" && (
+   489→   489→              <div className="space-y-4 animate-fade-in">
+   490→   490→                <div className="flex items-center justify-between">
+   491→   491→                  <h2 className="text-lg font-semibold text-navy">Manage Notices</h2>
+   492→   492→                  <Button
+   493→   493→                    onClick={() => startCreate("notices")}
+   494→   494→                    className="bg-gold hover:bg-gold-dark text-white text-sm"
+   495→   495→                  >
+   496→   496→                    <Plus className="w-4 h-4 mr-1" /> Add Notice
+   497→   497→                  </Button>
+   498→   498→                </div>
+   499→   499→
+   500→   500→                {/* Create/Edit form */}
+   501→   501→                {(isCreating || editingItem) && activeTab === "notices" && (
+   502→   502→                  <div className="bg-white rounded-xl p-5 border border-gold/20 shadow-sm space-y-3">
+   503→   503→                    <h3 className="font-semibold text-navy text-sm">
+   504→   504→                      {editingItem ? "Edit Notice" : "New Notice"}
+   505→   505→                    </h3>
+   506→   506→                    <input
+   507→   507→                      type="text"
+   508→   508→                      placeholder="Title"
+   509→   509→                      value={form.title || ""}
+   510→   510→                      onChange={(e) => setForm({ ...form, title: e.target.value })}
+   511→   511→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   512→   512→                    />
+   513→   513→                    <textarea
+   514→   514→                      placeholder="Content"
+   515→   515→                      rows={3}
+   516→   516→                      value={form.content || ""}
+   517→   517→                      onChange={(e) => setForm({ ...form, content: e.target.value })}
+   518→   518→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30 resize-none"
+   519→   519→                    />
+   520→   520→                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+   521→   521→                      <select
+   522→   522→                        value={form.category || "General"}
+   523→   523→                        onChange={(e) => setForm({ ...form, category: e.target.value })}
+   524→   524→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   525→   525→                      >
+   526→   526→                        {noticeCategories.map((c) => (
+   527→   527→                          <option key={c} value={c}>{c}</option>
+   528→   528→                        ))}
+   529→   529→                      </select>
+   530→   530→                      <input
+   531→   531→                        type="date"
+   532→   532→                        value={form.date || ""}
+   533→   533→                        onChange={(e) => setForm({ ...form, date: e.target.value })}
+   534→   534→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   535→   535→                      />
+   536→   536→                      <select
+   537→   537→                        value={form.active || "true"}
+   538→   538→                        onChange={(e) => setForm({ ...form, active: e.target.value })}
+   539→   539→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   540→   540→                      >
+   541→   541→                        <option value="true">Active</option>
+   542→   542→                        <option value="false">Inactive</option>
+   543→   543→                      </select>
+   544→   544→                    </div>
+   545→   545→                    <div className="flex items-center gap-2">
+   546→   546→                      <Button onClick={saveNotice} className="bg-navy hover:bg-navy-light text-white text-sm">
+   547→   547→                        <Save className="w-4 h-4 mr-1" /> Save
+   548→   548→                      </Button>
+   549→   549→                      <Button variant="outline" onClick={cancelEdit} className="text-sm">
+   550→   550→                        <X className="w-4 h-4 mr-1" /> Cancel
+   551→   551→                      </Button>
+   552→   552→                    </div>
+   553→   553→                  </div>
+   554→   554→                )}
+   555→   555→
+   556→   556→                {/* List */}
+   557→   557→                {notices.map((notice) => (
+   558→   558→                  <div
+   559→   559→                    key={notice.id}
+   560→   560→                    className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex items-start gap-3"
+   561→   561→                  >
+   562→   562→                    <Bell className="w-5 h-5 text-navy shrink-0 mt-0.5" />
+   563→   563→                    <div className="flex-1 min-w-0">
+   564→   564→                      <div className="flex items-center gap-2 mb-1">
+   565→   565→                        <h3 className="text-sm font-semibold text-navy">{notice.title}</h3>
+   566→   566→                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+   567→   567→                          notice.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+   568→   568→                        }`}>
+   569→   569→                          {notice.active ? "Active" : "Inactive"}
+   570→   570→                        </span>
+   571→   571→                      </div>
+   572→   572→                      <p className="text-xs text-muted-foreground line-clamp-1">{notice.content}</p>
+   573→   573→                    </div>
+   574→   574→                    <div className="flex items-center gap-1 shrink-0">
+   575→   575→                      <button
+   576→   576→                        onClick={() => startEdit(notice, "notices")}
+   577→   577→                        className="p-1.5 text-navy hover:text-gold hover:bg-gold/10 rounded-lg transition-colors"
+   578→   578→                      >
+   579→   579→                        <Pencil className="w-4 h-4" />
+   580→   580→                      </button>
+   581→   581→                      <button
+   582→   582→                        onClick={() => deleteNotice(notice.id)}
+   583→   583→                        className="p-1.5 text-navy hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+   584→   584→                      >
+   585→   585→                        <Trash2 className="w-4 h-4" />
+   586→   586→                      </button>
+   587→   587→                    </div>
+   588→   588→                  </div>
+   589→   589→                ))}
+   590→   590→              </div>
+   591→   591→            )}
+   592→   592→
+   593→   593→            {/* ====== EVENTS TAB ====== */}
+   594→   594→            {activeTab === "events" && (
+   595→   595→              <div className="space-y-4 animate-fade-in">
+   596→   596→                <div className="flex items-center justify-between">
+   597→   597→                  <h2 className="text-lg font-semibold text-navy">Manage Events</h2>
+   598→   598→                  <Button
+   599→   599→                    onClick={() => startCreate("events")}
+   600→   600→                    className="bg-gold hover:bg-gold-dark text-white text-sm"
+   601→   601→                  >
+   602→   602→                    <Plus className="w-4 h-4 mr-1" /> Add Event
+   603→   603→                  </Button>
+   604→   604→                </div>
+   605→   605→
+   606→   606→                {/* Create/Edit form */}
+   607→   607→                {(isCreating || editingItem) && activeTab === "events" && (
+   608→   608→                  <div className="bg-white rounded-xl p-5 border border-gold/20 shadow-sm space-y-3">
+   609→   609→                    <h3 className="font-semibold text-navy text-sm">
+   610→   610→                      {editingItem ? "Edit Event" : "New Event"}
+   611→   611→                    </h3>
+   612→   612→                    <input
+   613→   613→                      type="text"
+   614→   614→                      placeholder="Event Title"
+   615→   615→                      value={form.title || ""}
+   616→   616→                      onChange={(e) => setForm({ ...form, title: e.target.value })}
+   617→   617→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   618→   618→                    />
+   619→   619→                    <textarea
+   620→   620→                      placeholder="Description"
+   621→   621→                      rows={3}
+   622→   622→                      value={form.description || ""}
+   623→   623→                      onChange={(e) => setForm({ ...form, description: e.target.value })}
+   624→   624→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30 resize-none"
+   625→   625→                    />
+   626→   626→                    <div className="grid grid-cols-2 gap-3">
+   627→   627→                      <div>
+   628→   628→                        <label className="text-xs text-muted-foreground mb-1 block">Start Date & Time</label>
+   629→   629→                        <input
+   630→   630→                          type="datetime-local"
+   631→   631→                          value={form.date || ""}
+   632→   632→                          onChange={(e) => setForm({ ...form, date: e.target.value })}
+   633→   633→                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   634→   634→                        />
+   635→   635→                      </div>
+   636→   636→                      <div>
+   637→   637→                        <label className="text-xs text-muted-foreground mb-1 block">End Date & Time</label>
+   638→   638→                        <input
+   639→   639→                          type="datetime-local"
+   640→   640→                          value={form.endTime || ""}
+   641→   641→                          onChange={(e) => setForm({ ...form, endTime: e.target.value })}
+   642→   642→                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   643→   643→                        />
+   644→   644→                      </div>
+   645→   645→                    </div>
+   646→   646→                    <div className="grid grid-cols-3 gap-3">
+   647→   647→                      <select
+   648→   648→                        value={form.category || "General"}
+   649→   649→                        onChange={(e) => setForm({ ...form, category: e.target.value })}
+   650→   650→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   651→   651→                      >
+   652→   652→                        {eventCategories.map((c) => (
+   653→   653→                          <option key={c} value={c}>{c}</option>
+   654→   654→                        ))}
+   655→   655→                      </select>
+   656→   656→                      <input
+   657→   657→                        type="text"
+   658→   658→                        placeholder="Venue"
+   659→   659→                        value={form.venue || ""}
+   660→   660→                        onChange={(e) => setForm({ ...form, venue: e.target.value })}
+   661→   661→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   662→   662→                      />
+   663→   663→                      <select
+   664→   664→                        value={form.active || "true"}
+   665→   665→                        onChange={(e) => setForm({ ...form, active: e.target.value })}
+   666→   666→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   667→   667→                      >
+   668→   668→                        <option value="true">Active</option>
+   669→   669→                        <option value="false">Inactive</option>
+   670→   670→                      </select>
+   671→   671→                    </div>
+   672→   672→                    <div className="flex items-center gap-2">
+   673→   673→                      <Button onClick={saveEvent} className="bg-navy hover:bg-navy-light text-white text-sm">
+   674→   674→                        <Save className="w-4 h-4 mr-1" /> Save
+   675→   675→                      </Button>
+   676→   676→                      <Button variant="outline" onClick={cancelEdit} className="text-sm">
+   677→   677→                        <X className="w-4 h-4 mr-1" /> Cancel
+   678→   678→                      </Button>
+   679→   679→                    </div>
+   680→   680→                  </div>
+   681→   681→                )}
+   682→   682→
+   683→   683→                {/* List */}
+   684→   684→                {events.map((event) => (
+   685→   685→                  <div
+   686→   686→                    key={event.id}
+   687→   687→                    className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex items-start gap-3"
+   688→   688→                  >
+   689→   689→                    <Calendar className="w-5 h-5 text-navy shrink-0 mt-0.5" />
+   690→   690→                    <div className="flex-1 min-w-0">
+   691→   691→                      <div className="flex items-center gap-2 mb-1">
+   692→   692→                        <h3 className="text-sm font-semibold text-navy">{event.title}</h3>
+   693→   693→                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+   694→   694→                          event.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+   695→   695→                        }`}>
+   696→   696→                          {event.active ? "Active" : "Inactive"}
+   697→   697→                        </span>
+   698→   698→                      </div>
+   699→   699→                      <p className="text-xs text-muted-foreground">
+   700→   700→                        {new Date(event.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+   701→   701→                        {" · "}{event.venue} · {event.category}
+   702→   702→                      </p>
+   703→   703→                    </div>
+   704→   704→                    <div className="flex items-center gap-1 shrink-0">
+   705→   705→                      <button
+   706→   706→                        onClick={() => startEdit(event, "events")}
+   707→   707→                        className="p-1.5 text-navy hover:text-gold hover:bg-gold/10 rounded-lg transition-colors"
+   708→   708→                      >
+   709→   709→                        <Pencil className="w-4 h-4" />
+   710→   710→                      </button>
+   711→   711→                      <button
+   712→   712→                        onClick={() => deleteEvent(event.id)}
+   713→   713→                        className="p-1.5 text-navy hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+   714→   714→                      >
+   715→   715→                        <Trash2 className="w-4 h-4" />
+   716→   716→                      </button>
+   717→   717→                    </div>
+   718→   718→                  </div>
+   719→   719→                ))}
+   720→   720→              </div>
+   721→   721→            )}
+   722→   722→
+   723→   723→            {/* ====== ANNOUNCEMENTS TAB ====== */}
+   724→   724→            {activeTab === "announcements" && (
+   725→   725→              <div className="space-y-4 animate-fade-in">
+   726→   726→                <div className="flex items-center justify-between">
+   727→   727→                  <h2 className="text-lg font-semibold text-navy">Manage Announcements</h2>
+   728→   728→                  <Button
+   729→   729→                    onClick={() => startCreate("announcements")}
+   730→   730→                    className="bg-gold hover:bg-gold-dark text-white text-sm"
+   731→   731→                  >
+   732→   732→                    <Plus className="w-4 h-4 mr-1" /> Add Announcement
+   733→   733→                  </Button>
+   734→   734→                </div>
+   735→   735→
+   736→   736→                {/* Create/Edit form */}
+   737→   737→                {(isCreating || editingItem) && activeTab === "announcements" && (
+   738→   738→                  <div className="bg-white rounded-xl p-5 border border-gold/20 shadow-sm space-y-3">
+   739→   739→                    <h3 className="font-semibold text-navy text-sm">
+   740→   740→                      {editingItem ? "Edit Announcement" : "New Announcement"}
+   741→   741→                    </h3>
+   742→   742→                    <input
+   743→   743→                      type="text"
+   744→   744→                      placeholder="Title"
+   745→   745→                      value={form.title || ""}
+   746→   746→                      onChange={(e) => setForm({ ...form, title: e.target.value })}
+   747→   747→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   748→   748→                    />
+   749→   749→                    <textarea
+   750→   750→                      placeholder="Content"
+   751→   751→                      rows={3}
+   752→   752→                      value={form.content || ""}
+   753→   753→                      onChange={(e) => setForm({ ...form, content: e.target.value })}
+   754→   754→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30 resize-none"
+   755→   755→                    />
+   756→   756→                    <div className="grid grid-cols-2 gap-3">
+   757→   757→                      <select
+   758→   758→                        value={form.priority || "normal"}
+   759→   759→                        onChange={(e) => setForm({ ...form, priority: e.target.value })}
+   760→   760→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   761→   761→                      >
+   762→   762→                        {priorityOptions.map((p) => (
+   763→   763→                          <option key={p} value={p}>{p === "high" ? "High Priority" : "Normal"}</option>
+   764→   764→                        ))}
+   765→   765→                      </select>
+   766→   766→                      <select
+   767→   767→                        value={form.active || "true"}
+   768→   768→                        onChange={(e) => setForm({ ...form, active: e.target.value })}
+   769→   769→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   770→   770→                      >
+   771→   771→                        <option value="true">Active</option>
+   772→   772→                        <option value="false">Inactive</option>
+   773→   773→                      </select>
+   774→   774→                    </div>
+   775→   775→                    <div className="flex items-center gap-2">
+   776→   776→                      <Button onClick={saveAnnouncement} className="bg-navy hover:bg-navy-light text-white text-sm">
+   777→   777→                        <Save className="w-4 h-4 mr-1" /> Save
+   778→   778→                      </Button>
+   779→   779→                      <Button variant="outline" onClick={cancelEdit} className="text-sm">
+   780→   780→                        <X className="w-4 h-4 mr-1" /> Cancel
+   781→   781→                      </Button>
+   782→   782→                    </div>
+   783→   783→                  </div>
+   784→   784→                )}
+   785→   785→
+   786→   786→                {/* List */}
+   787→   787→                {announcements.map((ann) => (
+   788→   788→                  <div
+   789→   789→                    key={ann.id}
+   790→   790→                    className={`bg-white rounded-xl p-4 border shadow-sm flex items-start gap-3 ${
+   791→   791→                      ann.priority === "high" ? "border-l-4 border-l-red-400 border-red-100" : "border-gray-100"
+   792→   792→                    }`}
+   793→   793→                  >
+   794→   794→                    <Megaphone className={`w-5 h-5 shrink-0 mt-0.5 ${ann.priority === "high" ? "text-red-500" : "text-navy"}`} />
+   795→   795→                    <div className="flex-1 min-w-0">
+   796→   796→                      <div className="flex items-center gap-2 mb-1">
+   797→   797→                        <h3 className="text-sm font-semibold text-navy">{ann.title}</h3>
+   798→   798→                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+   799→   799→                          ann.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+   800→   800→                        }`}>
+   801→   801→                          {ann.active ? "Active" : "Inactive"}
+   802→   802→                        </span>
+   803→   803→                        {ann.priority === "high" && (
+   804→   804→                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-100 text-red-700">
+   805→   805→                            High Priority
+   806→   806→                          </span>
+   807→   807→                        )}
+   808→   808→                      </div>
+   809→   809→                      <p className="text-xs text-muted-foreground line-clamp-1">{ann.content}</p>
+   810→   810→                    </div>
+   811→   811→                    <div className="flex items-center gap-1 shrink-0">
+   812→   812→                      <button
+   813→   813→                        onClick={() => startEdit(ann, "announcements")}
+   814→   814→                        className="p-1.5 text-navy hover:text-gold hover:bg-gold/10 rounded-lg transition-colors"
+   815→   815→                      >
+   816→   816→                        <Pencil className="w-4 h-4" />
+   817→   817→                      </button>
+   818→   818→                      <button
+   819→   819→                        onClick={() => deleteAnnouncement(ann.id)}
+   820→   820→                        className="p-1.5 text-navy hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+   821→   821→                      >
+   822→   822→                        <Trash2 className="w-4 h-4" />
+   823→   823→                      </button>
+   824→   824→                    </div>
+   825→   825→                  </div>
+   826→   826→                ))}
+   827→   827→              </div>
+   828→   828→            )}
+   829→   829→
+   830→   830→            {/* ====== GALLERY TAB ====== */}
+   831→   831→            {activeTab === "gallery" && (
+   832→   832→              <div className="space-y-4 animate-fade-in">
+   833→   833→                <div className="flex items-center justify-between">
+   834→   834→                  <h2 className="text-lg font-semibold text-navy">Manage Gallery Images</h2>
+   835→   835→                  <Button
+   836→   836→                    onClick={() => startCreate("gallery")}
+   837→   837→                    className="bg-gold hover:bg-gold-dark text-white text-sm"
+   838→   838→                  >
+   839→   839→                    <Plus className="w-4 h-4 mr-1" /> Add Image
+   840→   840→                  </Button>
+   841→   841→                </div>
+   842→   842→
+   843→   843→                {/* Create/Edit form */}
+   844→   844→                {(isCreating || editingItem) && activeTab === "gallery" && (
+   845→   845→                  <div className="bg-white rounded-xl p-5 border border-gold/20 shadow-sm space-y-3">
+   846→   846→                    <h3 className="font-semibold text-navy text-sm">
+   847→   847→                      {editingItem ? "Edit Gallery Image" : "New Gallery Image"}
+   848→   848→                    </h3>
+   849→   849→
+   850→   850→                    {/* Image upload area */}
+   851→   851→                    <div
+   852→   852→                      className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-gold/50 transition-colors cursor-pointer"
+   853→   853→                      onClick={() => fileInputRef.current?.click()}
+   854→   854→                    >
+   855→   855→                      {form.imageUrl ? (
+   856→   856→                        <div className="space-y-2">
+   857→   857→                          <img
+   858→   858→                            src={form.imageUrl}
+   859→   859→                            alt="Preview"
+   860→   860→                            className="max-h-48 mx-auto rounded-lg object-contain"
+   861→   861→                          />
+   862→   862→                          <p className="text-xs text-muted-foreground">
+   863→   863→                            Click to change image
+   864→   864→                          </p>
+   865→   865→                        </div>
+   866→   866→                      ) : (
+   867→   867→                        <div className="space-y-2">
+   868→   868→                          <Upload className="w-10 h-10 mx-auto text-muted-foreground" />
+   869→   869→                          <p className="text-sm text-muted-foreground">
+   870→   870→                            Click to upload an image
+   871→   871→                          </p>
+   872→   872→                          <p className="text-xs text-muted-foreground">
+   873→   873→                            Supports JPEG, PNG, WebP, GIF (max 10MB)
+   874→   874→                          </p>
+   875→   875→                        </div>
+   876→   876→                      )}
+   877→   877→                      <input
+   878→   878→                        ref={fileInputRef}
+   879→   879→                        type="file"
+   880→   880→                        accept="image/jpeg,image/png,image/webp,image/gif"
+   881→   881→                        className="hidden"
+   882→   882→                        onChange={(e) => {
+   883→   883→                          const file = e.target.files?.[0];
+   884→   884→                          if (file) {
+   885→   885→                            // Preview the file locally
+   886→   886→                            const reader = new FileReader();
+   887→   887→                            reader.onload = (ev) => {
+   888→   888→                              setForm({
+   889→   889→                                ...form,
+   890→   890→                                imageUrl: ev.target?.result as string,
+   891→   891→                                imageFile: file as unknown as string,
+   892→   892→                              });
+   893→   893→                            };
+   894→   894→                            reader.readAsDataURL(file);
+   895→   895→                          }
+   896→   896→                        }}
+   897→   897→                      />
+   898→   898→                    </div>
+   899→   899→
+   900→   900→                    {uploading && (
+   901→   901→                      <div className="text-center text-sm text-gold flex items-center justify-center gap-2">
+   902→   902→                        <div className="w-4 h-4 border-2 border-gold border-t-transparent rounded-full animate-spin" />
+   903→   903→                        Uploading image...
+   904→   904→                      </div>
+   905→   905→                    )}
+   906→   906→
+   907→   907→                    <input
+   908→   908→                      type="text"
+   909→   909→                      placeholder="Image Title"
+   910→   910→                      value={form.title || ""}
+   911→   911→                      onChange={(e) => setForm({ ...form, title: e.target.value })}
+   912→   912→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   913→   913→                    />
+   914→   914→                    <input
+   915→   915→                      type="text"
+   916→   916→                      placeholder="Alt Text (description for accessibility)"
+   917→   917→                      value={form.alt || ""}
+   918→   918→                      onChange={(e) => setForm({ ...form, alt: e.target.value })}
+   919→   919→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   920→   920→                    />
+   921→   921→                    <div className="grid grid-cols-3 gap-3">
+   922→   922→                      <select
+   923→   923→                        value={form.category || "School Campus"}
+   924→   924→                        onChange={(e) => setForm({ ...form, category: e.target.value })}
+   925→   925→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   926→   926→                      >
+   927→   927→                        {galleryCategories.map((c) => (
+   928→   928→                          <option key={c} value={c}>{c}</option>
+   929→   929→                        ))}
+   930→   930→                      </select>
+   931→   931→                      <input
+   932→   932→                        type="number"
+   933→   933→                        placeholder="Display Order"
+   934→   934→                        value={form.order || ""}
+   935→   935→                        onChange={(e) => setForm({ ...form, order: e.target.value })}
+   936→   936→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   937→   937→                      />
+   938→   938→                      <select
+   939→   939→                        value={form.active || "true"}
+   940→   940→                        onChange={(e) => setForm({ ...form, active: e.target.value })}
+   941→   941→                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold/30"
+   942→   942→                      >
+   943→   943→                        <option value="true">Active</option>
+   944→   944→                        <option value="false">Inactive</option>
+   945→   945→                      </select>
+   946→   946→                    </div>
+   947→   947→                    <div className="flex items-center gap-2">
+   948→   948→                      <Button
+   949→   949→                        onClick={saveGalleryImage}
+   950→   950→                        disabled={uploading}
+   951→   951→                        className="bg-navy hover:bg-navy-light text-white text-sm"
+   952→   952→                      >
+   953→   953→                        <Save className="w-4 h-4 mr-1" /> {uploading ? "Uploading..." : "Save"}
+   954→   954→                      </Button>
+   955→   955→                      <Button variant="outline" onClick={cancelEdit} className="text-sm">
+   956→   956→                        <X className="w-4 h-4 mr-1" /> Cancel
+   957→   957→                      </Button>
+   958→   958→                    </div>
+   959→   959→                  </div>
+   960→   960→                )}
+   961→   961→
+   962→   962→                {/* Gallery image list */}
+   963→   963→                {galleryImages.length === 0 ? (
+   964→   964→                  <div className="text-center py-12">
+   965→   965→                    <Camera className="w-12 h-12 mx-auto mb-3 opacity-30" />
+   966→   966→                    <p className="text-muted-foreground">No gallery images yet. Add your first image!</p>
+   967→   967→                  </div>
+   968→   968→                ) : (
+   969→   969→                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+   970→   970→                    {galleryImages.map((img) => (
+   971→   971→                      <div
+   972→   972→                        key={img.id}
+   973→   973→                        className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden group"
+   974→   974→                      >
+   975→   975→                        <div className="relative h-48 overflow-hidden">
+   976→   976→                          <img
+   977→   977→                            src={img.imageUrl}
+   978→   978→                            alt={img.alt || img.title}
+   979→   979→                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+   980→   980→                          />
+   981→   981→                          <div className="absolute inset-0 bg-navy/0 group-hover:bg-navy/40 transition-all duration-300 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+   982→   982→                            <button
+   983→   983→                              onClick={() => startEdit(img, "gallery")}
+   984→   984→                              className="p-2 bg-white/90 rounded-lg text-navy hover:text-gold transition-colors"
+   985→   985→                            >
+   986→   986→                              <Pencil className="w-4 h-4" />
+   987→   987→                            </button>
+   988→   988→                            <button
+   989→   989→                              onClick={() => deleteGalleryImage(img.id)}
+   990→   990→                              className="p-2 bg-white/90 rounded-lg text-navy hover:text-red-600 transition-colors"
+   991→   991→                            >
+   992→   992→                              <Trash2 className="w-4 h-4" />
+   993→   993→                            </button>
+   994→   994→                          </div>
+   995→   995→                          <span className={`absolute top-2 right-2 text-[10px] px-2 py-0.5 rounded-full ${
+   996→   996→                            img.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+   997→   997→                          }`}>
+   998→   998→                            {img.active ? "Active" : "Inactive"}
+   999→   999→                          </span>
+  1000→  1000→                        </div>
+  1001→  1001→                        <div className="p-3">
+  1002→  1002→                          <h3 className="text-sm font-semibold text-navy truncate">{img.title}</h3>
+  1003→  1003→                          <p className="text-xs text-muted-foreground mt-1">{img.category} · Order: {img.order}</p>
+  1004→  1004→                        </div>
+  1005→  1005→                      </div>
+  1006→  1006→                    ))}
+  1007→  1007→                  </div>
+  1008→  1008→                )}
+  1009→  1009→              </div>
+  1010→  1010→            )}
+  1011→  1011→
+  1012→  1012→            {/* ====== ENQUIRIES TAB ====== */}
+  1013→  1013→            {activeTab === "enquiries" && (
+  1014→  1014→              <div className="space-y-4 animate-fade-in">
+  1015→  1015→                <div className="flex items-center justify-between">
+  1016→  1016→                  <h2 className="text-lg font-semibold text-navy">Enquiries</h2>
+  1017→  1017→                  <div className="flex items-center gap-2">
+  1018→  1018→                    {/* Summary badges */}
+  1019→  1019→                    <span className="text-xs px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 font-medium">
+  1020→  1020→                      {enquiries.filter(e => e.status === "pending").length} Pending
+  1021→  1021→                    </span>
+  1022→  1022→                    <span className="text-xs px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 font-medium">
+  1023→  1023→                      {enquiries.filter(e => e.status === "contacted").length} Contacted
+  1024→  1024→                    </span>
+  1025→  1025→                  </div>
+  1026→  1026→                </div>
+  1027→  1027→
+  1028→  1028→                {/* Filter */}
+  1029→  1029→                <div className="flex items-center gap-2 overflow-x-auto">
+  1030→  1030→                  {["all", ...enquiryStatuses].map((status) => (
+  1031→  1031→                    <button
+  1032→  1032→                      key={status}
+  1033→  1033→                      onClick={() => setEnquiryFilter(status)}
+  1034→  1034→                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+  1035→  1035→                        enquiryFilter === status
+  1036→  1036→                          ? "bg-navy text-white"
+  1037→  1037→                          : "bg-white text-navy hover:bg-navy/5 border border-gray-100"
+  1038→  1038→                      }`}
+  1039→  1039→                    >
+  1040→  1040→                      {status === "all" ? "All" : status.charAt(0).toUpperCase() + status.slice(1)}
+  1041→  1041→                    </button>
+  1042→  1042→                  ))}
+  1043→  1043→                </div>
+  1044→  1044→
+  1045→  1045→                {/* Enquiries list */}
+  1046→  1046→                {enquiries.filter(e => enquiryFilter === "all" || e.status === enquiryFilter).length === 0 ? (
+  1047→  1047→                  <div className="text-center py-12">
+  1048→  1048→                    <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-30" />
+  1049→  1049→                    <p className="text-muted-foreground">
+  1050→  1050→                      {enquiryFilter === "all" ? "No enquiries yet" : `No ${enquiryFilter} enquiries`}
+  1051→  1051→                    </p>
+  1052→  1052→                  </div>
+  1053→  1053→                ) : (
+  1054→  1054→                  enquiries
+  1055→  1055→                    .filter(e => enquiryFilter === "all" || e.status === enquiryFilter)
+  1056→  1056→                    .map((enquiry) => (
+  1057→  1057→                      <div
+  1058→  1058→                        key={enquiry.id}
+  1059→  1059→                        className={`bg-white rounded-xl p-4 border shadow-sm ${
+  1060→  1060→                          enquiry.status === "pending"
+  1061→  1061→                            ? "border-l-4 border-l-amber-400 border-amber-50"
+  1062→  1062→                            : enquiry.status === "contacted"
+  1063→  1063→                            ? "border-l-4 border-l-blue-400 border-blue-50"
+  1064→  1064→                            : enquiry.status === "admitted"
+  1065→  1065→                            ? "border-l-4 border-l-green-400 border-green-50"
+  1066→  1066→                            : "border-gray-100"
+  1067→  1067→                        }`}
+  1068→  1068→                      >
+  1069→  1069→                        <div className="flex items-start gap-3">
+  1070→  1070→                          <div className="w-10 h-10 rounded-full bg-navy/10 flex items-center justify-center shrink-0">
+  1071→  1071→                            <User className="w-5 h-5 text-navy" />
+  1072→  1072→                          </div>
+  1073→  1073→                          <div className="flex-1 min-w-0">
+  1074→  1074→                            <div className="flex items-center gap-2 flex-wrap mb-1">
+  1075→  1075→                              <h3 className="text-sm font-semibold text-navy">{enquiry.name}</h3>
+  1076→  1076→                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+  1077→  1077→                                enquiry.status === "pending"
+  1078→  1078→                                  ? "bg-amber-100 text-amber-700"
+  1079→  1079→                                  : enquiry.status === "contacted"
+  1080→  1080→                                  ? "bg-blue-100 text-blue-700"
+  1081→  1081→                                  : enquiry.status === "admitted"
+  1082→  1082→                                  ? "bg-green-100 text-green-700"
+  1083→  1083→                                  : "bg-gray-100 text-gray-500"
+  1084→  1084→                              }`}>
+  1085→  1085→                                {enquiry.status.charAt(0).toUpperCase() + enquiry.status.slice(1)}
+  1086→  1086→                              </span>
+  1087→  1087→                            </div>
+  1088→  1088→                            <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+  1089→  1089→                              <span className="flex items-center gap-1">
+  1090→  1090→                                <Mail className="w-3 h-3" /> {enquiry.email}
+  1091→  1091→                              </span>
+  1092→  1092→                              <span className="flex items-center gap-1">
+  1093→  1093→                                <Phone className="w-3 h-3" /> {enquiry.phone}
+  1094→  1094→                              </span>
+  1095→  1095→                              <span className="flex items-center gap-1">
+  1096→  1096→                                <Clock className="w-3 h-3" />{" "}
+  1097→  1097→                                {new Date(enquiry.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+  1098→  1098→                              </span>
+  1099→  1099→                            </div>
+  1100→  1100→                            <div className="mt-1 text-xs text-muted-foreground">
+  1101→  1101→                              Class: <span className="font-medium text-navy">{enquiry.class}</span>
+  1102→  1102→                            </div>
+  1103→  1103→                            {enquiry.message && (
+  1104→  1104→                              <p className="mt-2 text-xs text-gray-600 bg-gray-50 rounded-lg p-2 line-clamp-2">
+  1105→  1105→                                {enquiry.message}
+  1106→  1106→                              </p>
+  1107→  1107→                            )}
+  1108→  1108→                          </div>
+  1109→  1109→                          <div className="flex flex-col gap-1 shrink-0">
+  1110→  1110→                            <select
+  1111→  1111→                              value={enquiry.status}
+  1112→  1112→                              onChange={(e) => updateEnquiryStatus(enquiry.id, e.target.value)}
+  1113→  1113→                              className="text-[11px] px-2 py-1 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold/30"
+  1114→  1114→                            >
+  1115→  1115→                              {enquiryStatuses.map((s) => (
+  1116→  1116→                                <option key={s} value={s}>
+  1117→  1117→                                  {s.charAt(0).toUpperCase() + s.slice(1)}
+  1118→  1118→                                </option>
+  1119→  1119→                              ))}
+  1120→  1120→                            </select>
+  1121→  1121→                            <button
+  1122→  1122→                              onClick={() => deleteEnquiry(enquiry.id)}
+  1123→  1123→                              className="p-1.5 text-navy hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors self-center"
+  1124→  1124→                            >
+  1125→  1125→                              <Trash2 className="w-4 h-4" />
+  1126→  1126→                            </button>
+  1127→  1127→                          </div>
+  1128→  1128→                        </div>
+  1129→  1129→                      </div>
+  1130→  1130→                    ))
+  1131→  1131→                )}
+  1132→  1132→              </div>
+  1133→  1133→            )}
+  1134→  1134→          </>
+  1135→  1135→        )}
+  1136→  1136→      </div>
+  1137→  1137→    </div>
+  1138→  1138→  );
+  1139→  1139→}
+  1140→  1140→
