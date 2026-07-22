@@ -6,7 +6,6 @@ import Footer from "@/components/school/Footer";
 import HeroSection from "@/components/school/HeroSection";
 import QuickCards from "@/components/school/QuickCards";
 import AboutSection from "@/components/school/AboutSection";
-import FacilitiesSection from "@/components/school/FacilitiesSection";
 import AdmissionsSection from "@/components/school/AdmissionsSection";
 import NoticesSection from "@/components/school/NoticesSection";
 import GallerySection from "@/components/school/GallerySection";
@@ -113,7 +112,6 @@ export default function Home() {
               <HeroSection />
               <QuickCards />
               <AboutSection />
-              <FacilitiesSection />
               <AdmissionsSection />
               <GallerySection />
               <NoticesSection />
