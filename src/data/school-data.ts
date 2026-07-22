@@ -15,17 +15,17 @@ export const SCHOOL = {
     full: "Krishna Park, Chhatdiya Road, Rajula - 365560, Amreli, Gujarat",
   },
   phone: "+91 02794 222333",
-  email: "info@saintmaryrajula.edu.in",
+  email: "saintmaryrajula@gmail.com",
   social: {
-    facebook: "#",
-    instagram: "#",
+    facebook: "https://www.facebook.com/share/1DFicxhzUW/",
+    instagram: "https://www.instagram.com/saintmaryschoolrajula.in",
     youtube: "#",
     twitter: "#",
   },
   about:
     "Saint Mary School, Rajula, established in 2011, is a premier educational institution affiliated with the Gujarat Secondary and Higher Secondary Education Board (GSEB). We are committed to providing quality education from Nursery to Class 8 in a safe, nurturing, and stimulating environment. Our school blends traditional values with modern teaching methodologies, ensuring that every child receives a well-rounded education that prepares them for future success. With a dedicated team of qualified teachers and state-of-the-art facilities, we strive to develop not only academic excellence but also the character, creativity, and confidence of each student.",
   mapEmbedUrl:
-    "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3695.5!2d71.4!3d21.9!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2sRajula%2C+Gujarat!5e0!3m2!1sen!2sin!4v1234567890",
+    "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3695.5!2d71.4!3d21.9!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be24597a42d4137%3A0x9ab90a04ed59f7bd!2sSaint+Mary+School%2C+Rajula%2C+Gujarat+365560!5e0!3m2!1sen!2sin!4v1234567890",
 };
 
 export const quickCards = [

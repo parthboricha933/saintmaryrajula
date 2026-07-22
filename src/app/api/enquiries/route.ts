@@ -54,7 +54,7 @@ async function sendAutoReply(name: string, email: string, className: string) {
             <p style="color: #C5963A; margin: 0 0 8px 0; font-size: 13px; font-weight: 600;">Contact Us</p>
             <p style="color: #e2e8f0; margin: 0; font-size: 12px; line-height: 1.8;">
               📞 Phone: +91 98765 43210<br>
-              ✉️ Email: saintmaryschoolrajula2011@gmail.com<br>
+              ✉️ Email: saintmaryrajula@gmail.com<br>
               📍 Address: Rajula, Amreli, Gujarat, India
             </p>
           </div>

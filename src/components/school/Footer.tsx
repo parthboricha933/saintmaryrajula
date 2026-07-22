@@ -7,8 +7,6 @@ import {
   Mail,
   Facebook,
   Instagram,
-  Youtube,
-  Twitter,
   GraduationCap,
   ChevronUp,
 } from "lucide-react";
@@ -52,6 +50,8 @@ export default function Footer() {
             <div className="flex items-center gap-3">
               <a
                 href={SCHOOL.social.facebook}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-9 h-9 bg-white/10 hover:bg-gold rounded-lg flex items-center justify-center transition-colors"
                 aria-label="Facebook"
               >
@@ -59,24 +59,12 @@ export default function Footer() {
               </a>
               <a
                 href={SCHOOL.social.instagram}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-9 h-9 bg-white/10 hover:bg-gold rounded-lg flex items-center justify-center transition-colors"
                 aria-label="Instagram"
               >
                 <Instagram className="w-4 h-4" />
-              </a>
-              <a
-                href={SCHOOL.social.youtube}
-                className="w-9 h-9 bg-white/10 hover:bg-gold rounded-lg flex items-center justify-center transition-colors"
-                aria-label="YouTube"
-              >
-                <Youtube className="w-4 h-4" />
-              </a>
-              <a
-                href={SCHOOL.social.twitter}
-                className="w-9 h-9 bg-white/10 hover:bg-gold rounded-lg flex items-center justify-center transition-colors"
-                aria-label="Twitter"
-              >
-                <Twitter className="w-4 h-4" />
               </a>
             </div>
           </div>
@@ -144,6 +132,15 @@ export default function Footer() {
                 className="grayscale-[50%] opacity-80 hover:grayscale-0 hover:opacity-100 transition-all duration-300"
               />
             </div>
+            <a
+              href="https://maps.app.goo.gl/9zJJn7rftRMdWeq19"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 text-gold text-xs hover:text-gold-light transition-colors flex items-center gap-1"
+            >
+              <MapPin className="w-3 h-3" />
+              Get Directions on Google Maps
+            </a>
           </div>
         </div>
       </div>
