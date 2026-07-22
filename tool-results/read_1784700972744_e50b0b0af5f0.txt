@@ -1,0 +1,745 @@
+     1→     1→"use client";
+     2→     2→
+     3→     3→import { useState, useEffect, useRef } from "react";
+     4→     4→import {
+     5→     5→  Bell,
+     6→     6→  Calendar,
+     7→     7→  Megaphone,
+     8→     8→  Plus,
+     9→     9→  Pencil,
+    10→    10→  Trash2,
+    11→    11→  Save,
+    12→    12→  X,
+    13→    13→  LogOut,
+    14→    14→  UserCircle,
+    15→    15→  Camera,
+    16→    16→  Upload,
+    17→    17→  CheckCircle,
+    18→    18→  Clock,
+    19→    19→  BookOpen,
+    20→    20→  GraduationCap,
+    21→    21→  Languages,
+    22→    22→  MessageSquare,
+    23→    23→  Award,
+    24→    24→  ChevronLeft,
+    25→    25→} from "lucide-react";
+    26→    26→import { Button } from "@/components/ui/button";
+    27→    27→
+    28→    28→type TeacherData = {
+    29→    29→  id: string;
+    30→    30→  email: string;
+    31→    31→  name: string;
+    32→    32→  designation: string;
+    33→    33→  subject: string;
+    34→    34→  qualification: string;
+    35→    35→  experience: number;
+    36→    36→  languages: string;
+    37→    37→  shortIntro: string;
+    38→    38→  teachingPhilosophy: string;
+    39→    39→  photo: string | null;
+    40→    40→  status: string;
+    41→    41→};
+    42→    42→
+    43→    43→type Notice = {
+    44→    44→  id: string;
+    45→    45→  title: string;
+    46→    46→  content: string;
+    47→    47→  category: string;
+    48→    48→  date: string;
+    49→    49→  active: boolean;
+    50→    50→};
+    51→    51→
+    52→    52→type SchoolEvent = {
+    53→    53→  id: string;
+    54→    54→  title: string;
+    55→    55→  description: string;
+    56→    56→  date: string;
+    57→    57→  endTime: string | null;
+    58→    58→  venue: string;
+    59→    59→  category: string;
+    60→    60→  active: boolean;
+    61→    61→};
+    62→    62→
+    63→    63→type Announcement = {
+    64→    64→  id: string;
+    65→    65→  title: string;
+    66→    66→  content: string;
+    67→    67→  priority: string;
+    68→    68→  active: boolean;
+    69→    69→  createdAt: string;
+    70→    70→};
+    71→    71→
+    72→    72→type Enquiry = {
+    73→    73→  id: string;
+    74→    74→  name: string;
+    75→    75→  email: string;
+    76→    76→  phone: string;
+    77→    77→  class: string;
+    78→    78→  message: string | null;
+    79→    79→  status: string;
+    80→    80→  createdAt: string;
+    81→    81→};
+    82→    82→
+    83→    83→type TeacherTab = "profile" | "notices" | "events" | "announcements" | "enquiries";
+    84→    84→
+    85→    85→const noticeCategories = ["General", "Academic", "Event", "Holiday"];
+    86→    86→const eventCategories = ["General", "Celebration", "Sports", "Academic", "Cultural"];
+    87→    87→const priorityOptions = ["normal", "high"];
+    88→    88→const enquiryStatuses = ["pending", "contacted", "admitted", "closed"];
+    89→    89→const classOptions = ["Nursery", "JKG", "SKG", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8"];
+    90→    90→
+    91→    91→export default function TeacherDashboard({
+    92→    92→  teacher,
+    93→    93→  onLogout,
+    94→    94→}: {
+    95→    95→  teacher: TeacherData;
+    96→    96→  onLogout: () => void;
+    97→    97→}) {
+    98→    98→  const [activeTab, setActiveTab] = useState<TeacherTab>("profile");
+    99→    99→  const [notices, setNotices] = useState<Notice[]>([]);
+   100→   100→  const [events, setEvents] = useState<SchoolEvent[]>([]);
+   101→   101→  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+   102→   102→  const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
+   103→   103→  const [teacherProfile, setTeacherProfile] = useState<TeacherData>(teacher);
+   104→   104→  const [editProfile, setEditProfile] = useState(false);
+   105→   105→  const [editingItem, setEditingItem] = useState<string | null>(null);
+   106→   106→  const [showForm, setShowForm] = useState(false);
+   107→   107→  const [photoUploading, setPhotoUploading] = useState(false);
+   108→   108→  const fileInputRef = useRef<HTMLInputElement>(null);
+   109→   109→
+   110→   110→  // Form states
+   111→   111→  const [formData, setFormData] = useState<Record<string, string>>({});
+   112→   112→
+   113→   113→  useEffect(() => {
+   114→   114→    fetchData();
+   115→   115→  }, []);
+   116→   116→
+   117→   117→  const fetchData = async () => {
+   118→   118→    try {
+   119→   119→      const [nRes, eRes, aRes, enqRes] = await Promise.all([
+   120→   120→        fetch("/api/notices"),
+   121→   121→        fetch("/api/events"),
+   122→   122→        fetch("/api/announcements"),
+   123→   123→        fetch("/api/enquiries"),
+   124→   124→      ]);
+   125→   125→      if (nRes.ok) setNotices(await nRes.json());
+   126→   126→      if (eRes.ok) setEvents(await eRes.json());
+   127→   127→      if (aRes.ok) setAnnouncements(await aRes.json());
+   128→   128→      if (enqRes.ok) setEnquiries(await enqRes.json());
+   129→   129→    } catch (error) {
+   130→   130→      console.error("Error fetching data:", error);
+   131→   131→    }
+   132→   132→  };
+   133→   133→
+   134→   134→  // Profile photo upload
+   135→   135→  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+   136→   136→    const file = e.target.files?.[0];
+   137→   137→    if (!file) return;
+   138→   138→
+   139→   139→    setPhotoUploading(true);
+   140→   140→    try {
+   141→   141→      const formData = new FormData();
+   142→   142→      formData.append("file", file);
+   143→   143→      formData.append("folder", "teachers");
+   144→   144→
+   145→   145→      const uploadRes = await fetch("/api/upload", {
+   146→   146→        method: "POST",
+   147→   147→        body: formData,
+   148→   148→      });
+   149→   149→      const uploadData = await uploadRes.json();
+   150→   150→
+   151→   151→      if (uploadRes.ok && uploadData.url) {
+   152→   152→        // Update teacher profile with new photo
+   153→   153→        const updateRes = await fetch("/api/teachers", {
+   154→   154→          method: "PUT",
+   155→   155→          headers: { "Content-Type": "application/json" },
+   156→   156→          body: JSON.stringify({ id: teacherProfile.id, photo: uploadData.url }),
+   157→   157→        });
+   158→   158→        if (updateRes.ok) {
+   159→   159→          const updated = await updateRes.json();
+   160→   160→          setTeacherProfile(updated.teacher);
+   161→   161→        }
+   162→   162→      }
+   163→   163→    } catch (error) {
+   164→   164→      console.error("Error uploading photo:", error);
+   165→   165→    } finally {
+   166→   166→      setPhotoUploading(false);
+   167→   167→    }
+   168→   168→  };
+   169→   169→
+   170→   170→  // Save profile updates
+   171→   171→  const handleSaveProfile = async () => {
+   172→   172→    try {
+   173→   173→      const res = await fetch("/api/teachers", {
+   174→   174→        method: "PUT",
+   175→   175→        headers: { "Content-Type": "application/json" },
+   176→   176→        body: JSON.stringify({ id: teacherProfile.id, ...teacherProfile }),
+   177→   177→      });
+   178→   178→      if (res.ok) {
+   179→   179→        const data = await res.json();
+   180→   180→        setTeacherProfile(data.teacher);
+   181→   181→        setEditProfile(false);
+   182→   182→      }
+   183→   183→    } catch (error) {
+   184→   184→      console.error("Error saving profile:", error);
+   185→   185→    }
+   186→   186→  };
+   187→   187→
+   188→   188→  // CRUD for notices, events, announcements
+   189→   189→  const handleCreate = async (type: string) => {
+   190→   190→    try {
+   191→   191→      const res = await fetch(`/api/${type}`, {
+   192→   192→        method: "POST",
+   193→   193→        headers: { "Content-Type": "application/json" },
+   194→   194→        body: JSON.stringify(formData),
+   195→   195→      });
+   196→   196→      if (res.ok) {
+   197→   197→        await fetchData();
+   198→   198→        setShowForm(false);
+   199→   199→        setFormData({});
+   200→   200→      }
+   201→   201→    } catch (error) {
+   202→   202→      console.error("Error creating:", error);
+   203→   203→    }
+   204→   204→  };
+   205→   205→
+   206→   206→  const handleUpdate = async (type: string, id: string) => {
+   207→   207→    try {
+   208→   208→      const res = await fetch(`/api/${type}`, {
+   209→   209→        method: "PUT",
+   210→   210→        headers: { "Content-Type": "application/json" },
+   211→   211→        body: JSON.stringify({ id, ...formData }),
+   212→   212→      });
+   213→   213→      if (res.ok) {
+   214→   214→        await fetchData();
+   215→   215→        setEditingItem(null);
+   216→   216→        setFormData({});
+   217→   217→      }
+   218→   218→    } catch (error) {
+   219→   219→      console.error("Error updating:", error);
+   220→   220→    }
+   221→   221→  };
+   222→   222→
+   223→   223→  const handleDelete = async (type: string, id: string) => {
+   224→   224→    try {
+   225→   225→      const res = await fetch(`/api/${type}?id=${id}`, { method: "DELETE" });
+   226→   226→      if (res.ok) {
+   227→   227→        await fetchData();
+   228→   228→      }
+   229→   229→    } catch (error) {
+   230→   230→      console.error("Error deleting:", error);
+   231→   231→    }
+   232→   232→  };
+   233→   233→
+   234→   234→  const startEdit = (item: Record<string, unknown>, type: string) => {
+   235→   235→    setEditingItem(`${type}-${item.id as string}`);
+   236→   236→    setFormData(
+   237→   237→      Object.fromEntries(
+   238→   238→        Object.entries(item).filter(([k]) => k !== "id" && k !== "createdAt" && k !== "updatedAt")
+   239→   239→      ) as Record<string, string>
+   240→   240→    );
+   241→   241→  };
+   242→   242→
+   243→   243→  const startCreate = (type: string) => {
+   244→   244→    setShowForm(true);
+   245→   245→    setEditingItem(`new-${type}`);
+   246→   246→    setFormData({});
+   247→   247→  };
+   248→   248→
+   249→   249→  // Enquiry status update
+   250→   250→  const handleUpdateEnquiryStatus = async (id: string, status: string) => {
+   251→   251→    try {
+   252→   252→      const res = await fetch("/api/enquiries", {
+   253→   253→        method: "PUT",
+   254→   254→        headers: { "Content-Type": "application/json" },
+   255→   255→        body: JSON.stringify({ id, status }),
+   256→   256→      });
+   257→   257→      if (res.ok) {
+   258→   258→        await fetchData();
+   259→   259→      }
+   260→   260→    } catch (error) {
+   261→   261→      console.error("Error updating enquiry:", error);
+   262→   262→    }
+   263→   263→  };
+   264→   264→
+   265→   265→  const tabs = [
+   266→   266→    { id: "profile" as TeacherTab, label: "My Profile", icon: UserCircle },
+   267→   267→    { id: "notices" as TeacherTab, label: "Notices", icon: Bell },
+   268→   268→    { id: "events" as TeacherTab, label: "Events", icon: Calendar },
+   269→   269→    { id: "announcements" as TeacherTab, label: "Announcements", icon: Megaphone },
+   270→   270→    { id: "enquiries" as TeacherTab, label: "Enquiries", icon: MessageSquare },
+   271→   271→  ];
+   272→   272→
+   273→   273→  return (
+   274→   274→    <div className="pt-28 sm:pt-32 pb-16 min-h-screen bg-secondary/30">
+   275→   275→      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+   276→   276→        {/* Top bar */}
+   277→   277→        <div className="flex items-center justify-between mb-6">
+   278→   278→          <div className="flex items-center gap-3">
+   279→   279→            <div className="w-10 h-10 bg-green-accent/10 rounded-lg flex items-center justify-center">
+   280→   280→              <GraduationCap className="w-5 h-5 text-green-accent" />
+   281→   281→            </div>
+   282→   282→            <div>
+   283→   283→              <h1 className="text-lg font-semibold text-navy">Teacher Panel</h1>
+   284→   284→              <p className="text-xs text-muted-foreground">{teacherProfile.name} • {teacherProfile.designation}</p>
+   285→   285→            </div>
+   286→   286→          </div>
+   287→   287→          <Button variant="outline" size="sm" onClick={onLogout} className="text-red-600 border-red-200 hover:bg-red-50">
+   288→   288→            <LogOut className="w-4 h-4 mr-1" />
+   289→   289→            Logout
+   290→   290→          </Button>
+   291→   291→        </div>
+   292→   292→
+   293→   293→        {/* Tabs */}
+   294→   294→        <div className="flex flex-wrap gap-1 mb-6 bg-white rounded-lg p-1 shadow-sm border border-gray-100">
+   295→   295→          {tabs.map((tab) => (
+   296→   296→            <button
+   297→   297→              key={tab.id}
+   298→   298→              onClick={() => setActiveTab(tab.id)}
+   299→   299→              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+   300→   300→                activeTab === tab.id
+   301→   301→                  ? "bg-green-accent text-white shadow-sm"
+   302→   302→                  : "text-muted-foreground hover:text-navy hover:bg-gray-50"
+   303→   303→              }`}
+   304→   304→            >
+   305→   305→              <tab.icon className="w-4 h-4" />
+   306→   306→              {tab.label}
+   307→   307→            </button>
+   308→   308→          ))}
+   309→   309→        </div>
+   310→   310→
+   311→   311→        {/* Profile Tab */}
+   312→   312→        {activeTab === "profile" && (
+   313→   313→          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+   314→   314→            <div className="bg-green-accent p-6">
+   315→   315→              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
+   316→   316→                {/* Photo */}
+   317→   317→                <div className="relative">
+   318→   318→                  <div className="w-28 h-28 sm:w-32 sm:h-32 bg-white/10 rounded-xl flex items-center justify-center shrink-0 border-2 border-white/30 overflow-hidden">
+   319→   319→                    {teacherProfile.photo ? (
+   320→   320→                      <img src={teacherProfile.photo} alt={teacherProfile.name} className="w-full h-full object-cover" />
+   321→   321→                    ) : (
+   322→   322→                      <UserCircle className="w-16 h-16 text-white/40" />
+   323→   323→                    )}
+   324→   324→                  </div>
+   325→   325→                  <button
+   326→   326→                    onClick={() => fileInputRef.current?.click()}
+   327→   327→                    className="absolute bottom-1 right-1 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-gold/10 transition-colors"
+   328→   328→                    disabled={photoUploading}
+   329→   329→                  >
+   330→   330→                    {photoUploading ? (
+   331→   331→                      <span className="w-4 h-4 border-2 border-green-accent border-t-transparent rounded-full animate-spin" />
+   332→   332→                    ) : (
+   333→   333→                      <Camera className="w-4 h-4 text-green-accent" />
+   334→   334→                    )}
+   335→   335→                  </button>
+   336→   336→                  <input
+   337→   337→                    ref={fileInputRef}
+   338→   338→                    type="file"
+   339→   339→                    accept="image/*"
+   340→   340→                    onChange={handlePhotoUpload}
+   341→   341→                    className="hidden"
+   342→   342→                  />
+   343→   343→                </div>
+   344→   344→                <div className="text-center sm:text-left">
+   345→   345→                  <h2 className="text-xl sm:text-2xl font-bold text-white">{teacherProfile.name}</h2>
+   346→   346→                  <p className="text-white/80 font-medium text-sm sm:text-base">{teacherProfile.designation}</p>
+   347→   347→                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 text-sm text-white/70 mt-2">
+   348→   348→                    <span className="flex items-center gap-1.5">
+   349→   349→                      <BookOpen className="w-4 h-4 text-gold" />
+   350→   350→                      {teacherProfile.subject}
+   351→   351→                    </span>
+   352→   352→                    <span className="flex items-center gap-1.5">
+   353→   353→                      <GraduationCap className="w-4 h-4 text-gold" />
+   354→   354→                      {teacherProfile.qualification}
+   355→   355→                    </span>
+   356→   356→                    <span className="flex items-center gap-1.5">
+   357→   357→                      <Clock className="w-4 h-4 text-gold" />
+   358→   358→                      {teacherProfile.experience} Years
+   359→   359→                    </span>
+   360→   360→                  </div>
+   361→   361→                  <CheckCircle className="inline-block w-4 h-4 text-gold mr-1 mt-2" />
+   362→   362→                  <span className="text-xs text-white/70">Approved • {teacherProfile.email}</span>
+   363→   363→                </div>
+   364→   364→              </div>
+   365→   365→            </div>
+   366→   366→
+   367→   367→            {/* Profile details */}
+   368→   368→            <div className="p-6 space-y-6">
+   369→   369→              {editProfile ? (
+   370→   370→                <div className="space-y-4">
+   371→   371→                  <div>
+   372→   372→                    <label className="text-sm font-medium text-navy mb-1 block">Name</label>
+   373→   373→                    <input
+   374→   374→                      value={teacherProfile.name}
+   375→   375→                      onChange={(e) => setTeacherProfile({...teacherProfile, name: e.target.value})}
+   376→   376→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-accent/30"
+   377→   377→                    />
+   378→   378→                  </div>
+   379→   379→                  <div>
+   380→   380→                    <label className="text-sm font-medium text-navy mb-1 block">Designation</label>
+   381→   381→                    <input
+   382→   382→                      value={teacherProfile.designation}
+   383→   383→                      onChange={(e) => setTeacherProfile({...teacherProfile, designation: e.target.value})}
+   384→   384→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-accent/30"
+   385→   385→                    />
+   386→   386→                  </div>
+   387→   387→                  <div>
+   388→   388→                    <label className="text-sm font-medium text-navy mb-1 block">Subject</label>
+   389→   389→                    <input
+   390→   390→                      value={teacherProfile.subject}
+   391→   391→                      onChange={(e) => setTeacherProfile({...teacherProfile, subject: e.target.value})}
+   392→   392→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-accent/30"
+   393→   393→                    />
+   394→   394→                  </div>
+   395→   395→                  <div>
+   396→   396→                    <label className="text-sm font-medium text-navy mb-1 block">Qualification</label>
+   397→   397→                    <input
+   398→   398→                      value={teacherProfile.qualification}
+   399→   399→                      onChange={(e) => setTeacherProfile({...teacherProfile, qualification: e.target.value})}
+   400→   400→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-accent/30"
+   401→   401→                    />
+   402→   402→                  </div>
+   403→   403→                  <div>
+   404→   404→                    <label className="text-sm font-medium text-navy mb-1 block">Experience (years)</label>
+   405→   405→                    <input
+   406→   406→                      type="number"
+   407→   407→                      value={teacherProfile.experience}
+   408→   408→                      onChange={(e) => setTeacherProfile({...teacherProfile, experience: parseInt(e.target.value) || 0})}
+   409→   409→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-accent/30"
+   410→   410→                    />
+   411→   411→                  </div>
+   412→   412→                  <div>
+   413→   413→                    <label className="text-sm font-medium text-navy mb-1 block">Languages</label>
+   414→   414→                    <input
+   415→   415→                      value={teacherProfile.languages}
+   416→   416→                      onChange={(e) => setTeacherProfile({...teacherProfile, languages: e.target.value})}
+   417→   417→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-accent/30"
+   418→   418→                    />
+   419→   419→                  </div>
+   420→   420→                  <div>
+   421→   421→                    <label className="text-sm font-medium text-navy mb-1 block">Short Introduction</label>
+   422→   422→                    <textarea
+   423→   423→                      value={teacherProfile.shortIntro}
+   424→   424→                      onChange={(e) => setTeacherProfile({...teacherProfile, shortIntro: e.target.value})}
+   425→   425→                      rows={3}
+   426→   426→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-accent/30"
+   427→   427→                    />
+   428→   428→                  </div>
+   429→   429→                  <div>
+   430→   430→                    <label className="text-sm font-medium text-navy mb-1 block">Teaching Philosophy</label>
+   431→   431→                    <textarea
+   432→   432→                      value={teacherProfile.teachingPhilosophy}
+   433→   433→                      onChange={(e) => setTeacherProfile({...teacherProfile, teachingPhilosophy: e.target.value})}
+   434→   434→                      rows={4}
+   435→   435→                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-accent/30"
+   436→   436→                    />
+   437→   437→                  </div>
+   438→   438→                  <div className="flex gap-3">
+   439→   439→                    <Button onClick={handleSaveProfile} className="bg-green-accent hover:bg-green-accent/90 text-white">
+   440→   440→                      <Save className="w-4 h-4 mr-1" /> Save Profile
+   441→   441→                    </Button>
+   442→   442→                    <Button variant="outline" onClick={() => setEditProfile(false)}>
+   443→   443→                      <X className="w-4 h-4 mr-1" /> Cancel
+   444→   444→                    </Button>
+   445→   445→                  </div>
+   446→   446→                </div>
+   447→   447→              ) : (
+   448→   448→                <>
+   449→   449→                  <div className="flex justify-end">
+   450→   450→                    <Button variant="outline" size="sm" onClick={() => setEditProfile(true)} className="text-green-accent border-green-accent/20 hover:bg-green-accent/5">
+   451→   451→                      <Pencil className="w-4 h-4 mr-1" /> Edit Profile
+   452→   452→                    </Button>
+   453→   453→                  </div>
+   454→   454→
+   455→   455→                  {teacherProfile.languages && (
+   456→   456→                    <div>
+   457→   457→                      <h3 className="flex items-center gap-2 text-base font-semibold text-navy mb-2">
+   458→   458→                        <Languages className="w-5 h-5 text-green-accent" />
+   459→   459→                        Languages Known
+   460→   460→                      </h3>
+   461→   461→                      <p className="text-muted-foreground text-sm">{teacherProfile.languages}</p>
+   462→   462→                    </div>
+   463→   463→                  )}
+   464→   464→
+   465→   465→                  {teacherProfile.shortIntro && (
+   466→   466→                    <div>
+   467→   467→                      <h3 className="flex items-center gap-2 text-base font-semibold text-navy mb-2">
+   468→   468→                        <MessageSquare className="w-5 h-5 text-green-accent" />
+   469→   469→                        Introduction
+   470→   470→                      </h3>
+   471→   471→                      <p className="text-muted-foreground text-sm leading-relaxed">{teacherProfile.shortIntro}</p>
+   472→   472→                    </div>
+   473→   473→                  )}
+   474→   474→
+   475→   475→                  {teacherProfile.teachingPhilosophy && (
+   476→   476→                    <div>
+   477→   477→                      <h3 className="flex items-center gap-2 text-base font-semibold text-navy mb-2">
+   478→   478→                        <Award className="w-5 h-5 text-green-accent" />
+   479→   479→                        Teaching Philosophy
+   480→   480→                      </h3>
+   481→   481→                      <p className="text-muted-foreground text-sm leading-relaxed">{teacherProfile.teachingPhilosophy}</p>
+   482→   482→                    </div>
+   483→   483→                  )}
+   484→   484→                </>
+   485→   485→              )}
+   486→   486→            </div>
+   487→   487→          </div>
+   488→   488→        )}
+   489→   489→
+   490→   490→        {/* Notices Tab */}
+   491→   491→        {activeTab === "notices" && (
+   492→   492→          <div className="space-y-4">
+   493→   493→            <div className="flex items-center justify-between">
+   494→   494→              <h2 className="text-lg font-semibold text-navy">Notices</h2>
+   495→   495→              <Button size="sm" onClick={() => startCreate("notices")} className="bg-green-accent hover:bg-green-accent/90 text-white">
+   496→   496→                <Plus className="w-4 h-4 mr-1" /> Add Notice
+   497→   497→              </Button>
+   498→   498→            </div>
+   499→   499→
+   500→   500→            {editingItem === "new-notices" && showForm && (
+   501→   501→              <div className="bg-white rounded-lg p-4 border border-gray-100 space-y-3">
+   502→   502→                <input placeholder="Title" value={formData.title || ""} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+   503→   503→                <textarea placeholder="Content" value={formData.content || ""} onChange={(e) => setFormData({...formData, content: e.target.value})} rows={3} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+   504→   504→                <select value={formData.category || "General"} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+   505→   505→                  {noticeCategories.map(c => <option key={c} value={c}>{c}</option>)}
+   506→   506→                </select>
+   507→   507→                <input type="date" value={formData.date || new Date().toISOString().split("T")[0]} onChange={(e) => setFormData({...formData, date: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+   508→   508→                <div className="flex gap-2">
+   509→   509→                  <Button onClick={() => handleCreate("notices")} className="bg-green-accent hover:bg-green-accent/90 text-white"><Save className="w-4 h-4 mr-1" /> Save</Button>
+   510→   510→                  <Button variant="outline" onClick={() => { setShowForm(false); setEditingItem(null); setFormData({}); }}><X className="w-4 h-4 mr-1" /> Cancel</Button>
+   511→   511→                </div>
+   512→   512→              </div>
+   513→   513→            )}
+   514→   514→
+   515→   515→            <div className="space-y-3">
+   516→   516→              {notices.map((notice) => (
+   517→   517→                <div key={notice.id} className="bg-white rounded-lg p-4 border border-gray-100 hover:border-green-accent/20 transition-colors">
+   518→   518→                  {editingItem === `notices-${notice.id}` ? (
+   519→   519→                    <div className="space-y-3">
+   520→   520→                      <input value={formData.title || ""} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+   521→   521→                      <textarea value={formData.content || ""} onChange={(e) => setFormData({...formData, content: e.target.value})} rows={3} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+   522→   522→                      <select value={formData.category || "General"} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+   523→   523→                        {noticeCategories.map(c => <option key={c} value={c}>{c}</option>)}
+   524→   524→                      </select>
+   525→   525→                      <div className="flex gap-2">
+   526→   526→                        <Button size="sm" onClick={() => handleUpdate("notices", notice.id)} className="bg-green-accent hover:bg-green-accent/90 text-white"><Save className="w-3.5 h-3.5 mr-1" /> Update</Button>
+   527→   527→                        <Button variant="outline" size="sm" onClick={() => { setEditingItem(null); setFormData({}); }}><X className="w-3.5 h-3.5 mr-1" /> Cancel</Button>
+   528→   528→                      </div>
+   529→   529→                    </div>
+   530→   530→                  ) : (
+   531→   531→                    <div>
+   532→   532→                      <div className="flex items-start justify-between">
+   533→   533→                        <div>
+   534→   534→                          <h3 className="font-semibold text-navy text-sm">{notice.title}</h3>
+   535→   535→                          <p className="text-xs text-muted-foreground mt-1">{notice.content}</p>
+   536→   536→                          <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+   537→   537→                            <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded">{notice.category}</span>
+   538→   538→                            <span>{new Date(notice.date).toLocaleDateString()}</span>
+   539→   539→                          </div>
+   540→   540→                        </div>
+   541→   541→                        <div className="flex items-center gap-1">
+   542→   542→                          <Button variant="ghost" size="sm" onClick={() => startEdit(notice, "notices")} className="text-green-accent hover:bg-green-accent/5">
+   543→   543→                            <Pencil className="w-3.5 h-3.5" />
+   544→   544→                          </Button>
+   545→   545→                          <Button variant="ghost" size="sm" onClick={() => handleDelete("notices", notice.id)} className="text-red-500 hover:bg-red-50">
+   546→   546→                            <Trash2 className="w-3.5 h-3.5" />
+   547→   547→                          </Button>
+   548→   548→                        </div>
+   549→   549→                      </div>
+   550→   550→                    </div>
+   551→   551→                  )}
+   552→   552→                </div>
+   553→   553→              ))}
+   554→   554→              {notices.length === 0 && (
+   555→   555→                <p className="text-center text-muted-foreground py-8 text-sm">No notices yet. Click &quot;Add Notice&quot; to create one.</p>
+   556→   556→              )}
+   557→   557→            </div>
+   558→   558→          </div>
+   559→   559→        )}
+   560→   560→
+   561→   561→        {/* Events Tab */}
+   562→   562→        {activeTab === "events" && (
+   563→   563→          <div className="space-y-4">
+   564→   564→            <div className="flex items-center justify-between">
+   565→   565→              <h2 className="text-lg font-semibold text-navy">Events</h2>
+   566→   566→              <Button size="sm" onClick={() => startCreate("events")} className="bg-green-accent hover:bg-green-accent/90 text-white">
+   567→   567→                <Plus className="w-4 h-4 mr-1" /> Add Event
+   568→   568→              </Button>
+   569→   569→            </div>
+   570→   570→
+   571→   571→            {editingItem === "new-events" && showForm && (
+   572→   572→              <div className="bg-white rounded-lg p-4 border border-gray-100 space-y-3">
+   573→   573→                <input placeholder="Title" value={formData.title || ""} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+   574→   574→                <textarea placeholder="Description" value={formData.description || ""} onChange={(e) => setFormData({...formData, description: e.target.value})} rows={2} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+   575→   575→                <input type="datetime-local" value={formData.date || ""} onChange={(e) => setFormData({...formData, date: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+   576→   576→                <input type="datetime-local" value={formData.endTime || ""} onChange={(e) => setFormData({...formData, endTime: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+   577→   577→                <input placeholder="Venue" value={formData.venue || "School Campus"} onChange={(e) => setFormData({...formData, venue: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+   578→   578→                <select value={formData.category || "General"} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+   579→   579→                  {eventCategories.map(c => <option key={c} value={c}>{c}</option>)}
+   580→   580→                </select>
+   581→   581→                <div className="flex gap-2">
+   582→   582→                  <Button onClick={() => handleCreate("events")} className="bg-green-accent hover:bg-green-accent/90 text-white"><Save className="w-4 h-4 mr-1" /> Save</Button>
+   583→   583→                  <Button variant="outline" onClick={() => { setShowForm(false); setEditingItem(null); setFormData({}); }}><X className="w-4 h-4 mr-1" /> Cancel</Button>
+   584→   584→                </div>
+   585→   585→              </div>
+   586→   586→            )}
+   587→   587→
+   588→   588→            <div className="space-y-3">
+   589→   589→              {events.map((event) => (
+   590→   590→                <div key={event.id} className="bg-white rounded-lg p-4 border border-gray-100 hover:border-green-accent/20 transition-colors">
+   591→   591→                  {editingItem === `events-${event.id}` ? (
+   592→   592→                    <div className="space-y-3">
+   593→   593→                      <input value={formData.title || ""} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+   594→   594→                      <textarea value={formData.description || ""} onChange={(e) => setFormData({...formData, description: e.target.value})} rows={2} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+   595→   595→                      <input type="datetime-local" value={formData.date || ""} onChange={(e) => setFormData({...formData, date: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+   596→   596→                      <input placeholder="Venue" value={formData.venue || ""} onChange={(e) => setFormData({...formData, venue: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+   597→   597→                      <select value={formData.category || "General"} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+   598→   598→                        {eventCategories.map(c => <option key={c} value={c}>{c}</option>)}
+   599→   599→                      </select>
+   600→   600→                      <div className="flex gap-2">
+   601→   601→                        <Button size="sm" onClick={() => handleUpdate("events", event.id)} className="bg-green-accent hover:bg-green-accent/90 text-white"><Save className="w-3.5 h-3.5 mr-1" /> Update</Button>
+   602→   602→                        <Button variant="outline" size="sm" onClick={() => { setEditingItem(null); setFormData({}); }}><X className="w-3.5 h-3.5 mr-1" /> Cancel</Button>
+   603→   603→                      </div>
+   604→   604→                    </div>
+   605→   605→                  ) : (
+   606→   606→                    <div>
+   607→   607→                      <div className="flex items-start justify-between">
+   608→   608→                        <div>
+   609→   609→                          <h3 className="font-semibold text-navy text-sm">{event.title}</h3>
+   610→   610→                          <p className="text-xs text-muted-foreground mt-1">{event.description}</p>
+   611→   611→                          <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+   612→   612→                            <span className="bg-green-50 text-green-600 px-2 py-0.5 rounded">{event.category}</span>
+   613→   613→                            <span>{new Date(event.date).toLocaleDateString()}</span>
+   614→   614→                            <span>{event.venue}</span>
+   615→   615→                          </div>
+   616→   616→                        </div>
+   617→   617→                        <div className="flex items-center gap-1">
+   618→   618→                          <Button variant="ghost" size="sm" onClick={() => startEdit(event, "events")} className="text-green-accent hover:bg-green-accent/5">
+   619→   619→                            <Pencil className="w-3.5 h-3.5" />
+   620→   620→                          </Button>
+   621→   621→                          <Button variant="ghost" size="sm" onClick={() => handleDelete("events", event.id)} className="text-red-500 hover:bg-red-50">
+   622→   622→                            <Trash2 className="w-3.5 h-3.5" />
+   623→   623→                          </Button>
+   624→   624→                        </div>
+   625→   625→                      </div>
+   626→   626→                    </div>
+   627→   627→                  )}
+   628→   628→                </div>
+   629→   629→              ))}
+   630→   630→              {events.length === 0 && (
+   631→   631→                <p className="text-center text-muted-foreground py-8 text-sm">No events yet. Click &quot;Add Event&quot; to create one.</p>
+   632→   632→              )}
+   633→   633→            </div>
+   634→   634→          </div>
+   635→   635→        )}
+   636→   636→
+   637→   637→        {/* Announcements Tab */}
+   638→   638→        {activeTab === "announcements" && (
+   639→   639→          <div className="space-y-4">
+   640→   640→            <div className="flex items-center justify-between">
+   641→   641→              <h2 className="text-lg font-semibold text-navy">Announcements</h2>
+   642→   642→              <Button size="sm" onClick={() => startCreate("announcements")} className="bg-green-accent hover:bg-green-accent/90 text-white">
+   643→   643→                <Plus className="w-4 h-4 mr-1" /> Add Announcement
+   644→   644→              </Button>
+   645→   645→            </div>
+   646→   646→
+   647→   647→            {editingItem === "new-announcements" && showForm && (
+   648→   648→              <div className="bg-white rounded-lg p-4 border border-gray-100 space-y-3">
+   649→   649→                <input placeholder="Title" value={formData.title || ""} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+   650→   650→                <textarea placeholder="Content" value={formData.content || ""} onChange={(e) => setFormData({...formData, content: e.target.value})} rows={3} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+   651→   651→                <select value={formData.priority || "normal"} onChange={(e) => setFormData({...formData, priority: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+   652→   652→                  {priorityOptions.map(p => <option key={p} value={p}>{p === "high" ? "High Priority" : "Normal"}</option>)}
+   653→   653→                </select>
+   654→   654→                <div className="flex gap-2">
+   655→   655→                  <Button onClick={() => handleCreate("announcements")} className="bg-green-accent hover:bg-green-accent/90 text-white"><Save className="w-4 h-4 mr-1" /> Save</Button>
+   656→   656→                  <Button variant="outline" onClick={() => { setShowForm(false); setEditingItem(null); setFormData({}); }}><X className="w-4 h-4 mr-1" /> Cancel</Button>
+   657→   657→                </div>
+   658→   658→              </div>
+   659→   659→            )}
+   660→   660→
+   661→   661→            <div className="space-y-3">
+   662→   662→              {announcements.map((ann) => (
+   663→   663→                <div key={ann.id} className="bg-white rounded-lg p-4 border border-gray-100 hover:border-green-accent/20 transition-colors">
+   664→   664→                  {editingItem === `announcements-${ann.id}` ? (
+   665→   665→                    <div className="space-y-3">
+   666→   666→                      <input value={formData.title || ""} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+   667→   667→                      <textarea value={formData.content || ""} onChange={(e) => setFormData({...formData, content: e.target.value})} rows={3} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+   668→   668→                      <select value={formData.priority || "normal"} onChange={(e) => setFormData({...formData, priority: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+   669→   669→                        {priorityOptions.map(p => <option key={p} value={p}>{p === "high" ? "High Priority" : "Normal"}</option>)}
+   670→   670→                      </select>
+   671→   671→                      <div className="flex gap-2">
+   672→   672→                        <Button size="sm" onClick={() => handleUpdate("announcements", ann.id)} className="bg-green-accent hover:bg-green-accent/90 text-white"><Save className="w-3.5 h-3.5 mr-1" /> Update</Button>
+   673→   673→                        <Button variant="outline" size="sm" onClick={() => { setEditingItem(null); setFormData({}); }}><X className="w-3.5 h-3.5 mr-1" /> Cancel</Button>
+   674→   674→                      </div>
+   675→   675→                    </div>
+   676→   676→                  ) : (
+   677→   677→                    <div>
+   678→   678→                      <div className="flex items-start justify-between">
+   679→   679→                        <div>
+   680→   680→                          <h3 className="font-semibold text-navy text-sm">{ann.title}</h3>
+   681→   681→                          <p className="text-xs text-muted-foreground mt-1">{ann.content}</p>
+   682→   682→                          <span className={`text-xs px-2 py-0.5 rounded mt-2 inline-block ${ann.priority === "high" ? "bg-red-50 text-red-600" : "bg-gray-50 text-gray-600"}`}>
+   683→   683→                            {ann.priority === "high" ? "High Priority" : "Normal"}
+   684→   684→                          </span>
+   685→   685→                        </div>
+   686→   686→                        <div className="flex items-center gap-1">
+   687→   687→                          <Button variant="ghost" size="sm" onClick={() => startEdit(ann, "announcements")} className="text-green-accent hover:bg-green-accent/5">
+   688→   688→                            <Pencil className="w-3.5 h-3.5" />
+   689→   689→                          </Button>
+   690→   690→                          <Button variant="ghost" size="sm" onClick={() => handleDelete("announcements", ann.id)} className="text-red-500 hover:bg-red-50">
+   691→   691→                            <Trash2 className="w-3.5 h-3.5" />
+   692→   692→                          </Button>
+   693→   693→                        </div>
+   694→   694→                      </div>
+   695→   695→                    </div>
+   696→   696→                  )}
+   697→   697→                </div>
+   698→   698→              ))}
+   699→   699→              {announcements.length === 0 && (
+   700→   700→                <p className="text-center text-muted-foreground py-8 text-sm">No announcements yet.</p>
+   701→   701→              )}
+   702→   702→            </div>
+   703→   703→          </div>
+   704→   704→        )}
+   705→   705→
+   706→   706→        {/* Enquiries Tab */}
+   707→   707→        {activeTab === "enquiries" && (
+   708→   708→          <div className="space-y-4">
+   709→   709→            <h2 className="text-lg font-semibold text-navy">Admission Enquiries</h2>
+   710→   710→            <div className="space-y-3">
+   711→   711→              {enquiries.map((enq) => (
+   712→   712→                <div key={enq.id} className="bg-white rounded-lg p-4 border border-gray-100 hover:border-green-accent/20 transition-colors">
+   713→   713→                  <div className="flex items-start justify-between">
+   714→   714→                    <div>
+   715→   715→                      <h3 className="font-semibold text-navy text-sm">{enq.name}</h3>
+   716→   716→                      <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+   717→   717→                        <span>{enq.email}</span>
+   718→   718→                        <span>{enq.phone}</span>
+   719→   719→                        <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded">{enq.class}</span>
+   720→   720→                      </div>
+   721→   721→                      {enq.message && <p className="text-xs text-muted-foreground mt-2">{enq.message}</p>}
+   722→   722→                    </div>
+   723→   723→                    <div className="flex items-center gap-2">
+   724→   724→                      <select
+   725→   725→                        value={enq.status}
+   726→   726→                        onChange={(e) => handleUpdateEnquiryStatus(enq.id, e.target.value)}
+   727→   727→                        className="text-xs border border-gray-200 rounded px-2 py-1"
+   728→   728→                      >
+   729→   729→                        {enquiryStatuses.map(s => <option key={s} value={s}>{s}</option>)}
+   730→   730→                      </select>
+   731→   731→                    </div>
+   732→   732→                  </div>
+   733→   733→                </div>
+   734→   734→              ))}
+   735→   735→              {enquiries.length === 0 && (
+   736→   736→                <p className="text-center text-muted-foreground py-8 text-sm">No enquiries yet.</p>
+   737→   737→              )}
+   738→   738→            </div>
+   739→   739→          </div>
+   740→   740→        )}
+   741→   741→      </div>
+   742→   742→    </div>
+   743→   743→  );
+   744→   744→}
+   745→   745→

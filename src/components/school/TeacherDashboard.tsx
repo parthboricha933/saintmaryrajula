@@ -105,6 +105,8 @@ export default function TeacherDashboard({
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form states
@@ -137,19 +139,26 @@ export default function TeacherDashboard({
     if (!file) return;
 
     setPhotoUploading(true);
+    setUploadError(null);
+    setUploadSuccess(false);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("folder", "teachers");
+      const uploadForm = new FormData();
+      uploadForm.append("file", file);
+      uploadForm.append("folder", "teachers");
 
       const uploadRes = await fetch("/api/upload", {
         method: "POST",
-        body: formData,
+        body: uploadForm,
       });
       const uploadData = await uploadRes.json();
 
-      if (uploadRes.ok && uploadData.url) {
-        // Update teacher profile with new photo
+      if (!uploadRes.ok) {
+        setUploadError(uploadData.error || "Upload failed. Please try again.");
+        return;
+      }
+
+      if (uploadData.url) {
+        // Update teacher profile with new photo URL (base64 data URL or Blob URL)
         const updateRes = await fetch("/api/teachers", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -158,12 +167,22 @@ export default function TeacherDashboard({
         if (updateRes.ok) {
           const updated = await updateRes.json();
           setTeacherProfile(updated.teacher);
+          setUploadSuccess(true);
+          // Auto-hide success message after 3 seconds
+          setTimeout(() => setUploadSuccess(false), 3000);
+        } else {
+          setUploadError("Failed to save photo to profile. Please try again.");
         }
+      } else {
+        setUploadError("No photo URL returned from upload.");
       }
     } catch (error) {
       console.error("Error uploading photo:", error);
+      setUploadError("Network error during upload. Please check your connection.");
     } finally {
       setPhotoUploading(false);
+      // Reset file input so same file can be re-selected
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -317,7 +336,7 @@ export default function TeacherDashboard({
                 <div className="relative">
                   <div className="w-28 h-28 sm:w-32 sm:h-32 bg-white/10 rounded-xl flex items-center justify-center shrink-0 border-2 border-white/30 overflow-hidden">
                     {teacherProfile.photo ? (
-                      <img src={teacherProfile.photo} alt={teacherProfile.name} className="w-full h-full object-cover" />
+                      <img src={teacherProfile.photo} alt={teacherProfile.name} className="w-full h-full object-cover rounded-xl" />
                     ) : (
                       <UserCircle className="w-16 h-16 text-white/40" />
                     )}
@@ -336,10 +355,21 @@ export default function TeacherDashboard({
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
                     onChange={handlePhotoUpload}
                     className="hidden"
                   />
+                  {/* Upload status indicators */}
+                  {photoUploading && (
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white text-green-accent text-xs px-2 py-1 rounded-full shadow-md whitespace-nowrap">
+                      Uploading...
+                    </div>
+                  )}
+                  {uploadSuccess && !photoUploading && (
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white text-green-600 text-xs px-2 py-1 rounded-full shadow-md whitespace-nowrap">
+                      <CheckCircle className="w-3 h-3 inline mr-1" />Photo saved!
+                    </div>
+                  )}
                 </div>
                 <div className="text-center sm:text-left">
                   <h2 className="text-xl sm:text-2xl font-bold text-white">{teacherProfile.name}</h2>
@@ -366,6 +396,16 @@ export default function TeacherDashboard({
 
             {/* Profile details */}
             <div className="p-6 space-y-6">
+              {/* Upload error message */}
+              {uploadError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700 flex items-center gap-2">
+                  <X className="w-4 h-4 shrink-0" />
+                  {uploadError}
+                  <button onClick={() => setUploadError(null)} className="ml-auto text-red-400 hover:text-red-600">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
               {editProfile ? (
                 <div className="space-y-4">
                   <div>

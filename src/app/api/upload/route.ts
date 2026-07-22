@@ -8,6 +8,7 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
+    const folder = (formData.get("folder") as string) || "gallery";
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
@@ -29,34 +30,58 @@ export async function POST(request: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
+    // Determine resize dimensions based on folder
+    const isTeacherPhoto = folder === "teachers";
+    const maxDim = isTeacherPhoto ? 400 : 2000;
+    const jpegQuality = isTeacherPhoto ? 85 : 90;
+    const filename = `${folder}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
     // Process image with sharp
     let processedBuffer: Buffer;
-    const filename = `gallery-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
     if (file.type === "image/jpeg" || file.type === "image/jpg") {
       processedBuffer = await sharp(buffer)
-        .resize(2000, 2000, { fit: "inside", withoutEnlargement: true })
-        .jpeg({ quality: 90, mozjpeg: true })
+        .resize(maxDim, maxDim, { fit: "cover", position: "center" })
+        .jpeg({ quality: jpegQuality, mozjpeg: true })
         .toBuffer();
     } else if (file.type === "image/png") {
       processedBuffer = await sharp(buffer)
-        .resize(2000, 2000, { fit: "inside", withoutEnlargement: true })
+        .resize(maxDim, maxDim, { fit: "cover", position: "center" })
         .png({ compressionLevel: 6 })
         .toBuffer();
     } else if (file.type === "image/webp") {
       processedBuffer = await sharp(buffer)
-        .resize(2000, 2000, { fit: "inside", withoutEnlargement: true })
-        .webp({ quality: 90 })
+        .resize(maxDim, maxDim, { fit: "cover", position: "center" })
+        .webp({ quality: jpegQuality })
         .toBuffer();
     } else {
       // GIF — convert to JPEG for better quality
       processedBuffer = await sharp(buffer)
-        .resize(2000, 2000, { fit: "inside", withoutEnlargement: true })
-        .jpeg({ quality: 90, mozjpeg: true })
+        .resize(maxDim, maxDim, { fit: "cover", position: "center" })
+        .jpeg({ quality: jpegQuality, mozjpeg: true })
         .toBuffer();
     }
 
-    // Try Vercel Blob first (production), then local filesystem (dev)
+    // For teacher photos: always use base64 data URL (works on Vercel without Blob token)
+    // This stores the photo directly in the database — no external storage needed
+    if (isTeacherPhoto) {
+      // Convert to JPEG first for consistency and smaller size
+      const jpegBuffer = await sharp(processedBuffer)
+        .jpeg({ quality: 80, mozjpeg: true })
+        .toBuffer();
+      const base64 = jpegBuffer.toString("base64");
+      const dataUrl = `data:image/jpeg;base64,${base64}`;
+
+      return NextResponse.json({
+        url: dataUrl,
+        filename: filename,
+        message: "Teacher photo uploaded successfully (base64)",
+        storageType: "base64",
+      });
+    }
+
+    // For gallery/event images: try Vercel Blob first, then local filesystem
+    // Try Vercel Blob first (production)
     if (process.env.BLOB_READ_WRITE_TOKEN) {
       try {
         const { put } = await import("@vercel/blob");
@@ -68,6 +93,7 @@ export async function POST(request: NextRequest) {
           url: blob.url,
           filename: filename,
           message: "Image uploaded to Vercel Blob successfully",
+          storageType: "blob",
         });
       } catch (blobError) {
         console.error("Vercel Blob upload failed:", blobError);
@@ -78,7 +104,7 @@ export async function POST(request: NextRequest) {
     // Local filesystem upload (development)
     const fs = await import("fs/promises");
     const path = await import("path");
-    const uploadDir = path.join(process.cwd(), "public", "gallery");
+    const uploadDir = path.join(process.cwd(), "public", folder);
 
     // Ensure directory exists
     try {
@@ -90,12 +116,13 @@ export async function POST(request: NextRequest) {
     const filePath = path.join(uploadDir, `${filename}.jpg`);
     await fs.writeFile(filePath, processedBuffer);
 
-    const imageUrl = `/gallery/${filename}.jpg`;
+    const imageUrl = `/${folder}/${filename}.jpg`;
 
     return NextResponse.json({
       url: imageUrl,
       filename: filename,
       message: "Image uploaded successfully (local filesystem)",
+      storageType: "local",
     });
   } catch (error) {
     console.error("Upload error:", error);

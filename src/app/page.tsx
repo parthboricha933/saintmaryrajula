@@ -10,6 +10,7 @@ import FacilitiesSection from "@/components/school/FacilitiesSection";
 import NoticesSection from "@/components/school/NoticesSection";
 import GallerySection from "@/components/school/GallerySection";
 import EnquirySection from "@/components/school/EnquirySection";
+import TeachersSection from "@/components/school/TeachersSection";
 import TeachersPage from "@/components/school/TeachersPage";
 import TeacherDetailPage from "@/components/school/TeacherDetailPage";
 import NoticesEventsPage from "@/components/school/NoticesEventsPage";
@@ -130,6 +131,7 @@ export default function Home() {
               <AboutSection />
               <FacilitiesSection />
               <GallerySection />
+              <TeachersSection />
               <NoticesSection />
               <EnquirySection />
             </>
