@@ -13,14 +13,13 @@ interface HeaderProps {
 const navItems = [
   { label: "Home", href: "home" },
   { label: "About", href: "about" },
-  { label: "Teachers", href: "teachers" },
   { label: "Gallery", href: "gallery" },
   { label: "Notices", href: "notices-page" },
   { label: "Enquiry", href: "enquiry" },
   { label: "Contact", href: "contact" },
 ];
 
-const separateViews = ["teachers", "notices-page", "admin", "teacher-login"];
+const separateViews = ["notices-page", "admin", "teacher-login"];
 
 export default function Header({ onNavigate, currentView }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);

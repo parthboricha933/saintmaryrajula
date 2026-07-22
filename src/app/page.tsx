@@ -10,7 +10,6 @@ import FacilitiesSection from "@/components/school/FacilitiesSection";
 import NoticesSection from "@/components/school/NoticesSection";
 import GallerySection from "@/components/school/GallerySection";
 import EnquirySection from "@/components/school/EnquirySection";
-import TeachersSection from "@/components/school/TeachersSection";
 import NoticesEventsPage from "@/components/school/NoticesEventsPage";
 import AdminLogin from "@/components/school/AdminLogin";
 import AdminDashboard from "@/components/school/AdminDashboard";
@@ -20,7 +19,6 @@ import LoadingScreen from "@/components/school/LoadingScreen";
 
 type View =
   | "home"
-  | "teachers"
   | "notices-page"
   | "admin"
   | "admin-dashboard"
@@ -61,7 +59,6 @@ export default function Home() {
 
   const handleNavigate = (view: string) => {
     if (
-      view === "teachers" ||
       view === "notices-page" ||
       view === "admin" ||
       view === "admin-dashboard" ||
@@ -120,9 +117,6 @@ export default function Home() {
               <NoticesSection />
               <EnquirySection />
             </>
-          )}
-          {currentView === "teachers" && (
-            <TeachersSection />
           )}
           {currentView === "notices-page" && <NoticesEventsPage />}
           {currentView === "admin" && <AdminLogin onLogin={handleAdminLogin} />}
