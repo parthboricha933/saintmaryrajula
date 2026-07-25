@@ -193,7 +193,7 @@ export default function NoticesEventsPage() {
           <>
             {/* NOTICES TAB */}
             {activeTab === "notices" && (
-              <div className="space-y-4 animate-fade-in">
+              <div className="space-y-4">
                 {notices.length === 0 ? (
                   <div className="text-center py-12 bg-white rounded-xl border border-gray-100">
                     <Bell className="w-12 h-12 mx-auto mb-3 text-muted-foreground/30" />
@@ -240,7 +240,7 @@ export default function NoticesEventsPage() {
 
             {/* EVENTS TAB */}
             {activeTab === "events" && (
-              <div className="grid sm:grid-cols-2 gap-4 sm:gap-5 animate-fade-in">
+              <div className="grid sm:grid-cols-2 gap-4 sm:gap-5">
                 {events.length === 0 ? (
                   <div className="col-span-2 text-center py-12 bg-white rounded-xl border border-gray-100">
                     <Calendar className="w-12 h-12 mx-auto mb-3 text-muted-foreground/30" />
@@ -299,7 +299,7 @@ export default function NoticesEventsPage() {
 
             {/* ANNOUNCEMENTS TAB */}
             {activeTab === "announcements" && (
-              <div className="space-y-4 animate-fade-in">
+              <div className="space-y-4">
                 {announcements.length === 0 ? (
                   <div className="text-center py-12 bg-white rounded-xl border border-gray-100">
                     <Megaphone className="w-12 h-12 mx-auto mb-3 text-muted-foreground/30" />

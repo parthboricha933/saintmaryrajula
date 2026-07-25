@@ -162,7 +162,7 @@ export default function Footer() {
       {showScrollTop && (
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          className="fixed bottom-6 right-6 w-11 h-11 bg-gold hover:bg-gold-dark text-white rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center z-40 animate-fade-in"
+          className="fixed bottom-6 right-6 w-11 h-11 bg-gold hover:bg-gold-dark text-white rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center z-40"
           aria-label="Scroll to top"
         >
           <ChevronUp className="w-5 h-5" />

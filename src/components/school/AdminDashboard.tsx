@@ -469,7 +469,7 @@ export default function AdminDashboard({
 
         {/* Status message */}
         {saveStatus && (
-          <div className="mb-4 bg-green-50 text-green-700 text-sm p-3 rounded-lg border border-green-200 flex items-center gap-2 animate-fade-in">
+          <div className="mb-4 bg-green-50 text-green-700 text-sm p-3 rounded-lg border border-green-200 flex items-center gap-2">
             <CheckCircle className="w-4 h-4" />
             {saveStatus}
           </div>
@@ -508,7 +508,7 @@ export default function AdminDashboard({
           <>
             {/* ====== NOTICES TAB ====== */}
             {activeTab === "notices" && (
-              <div className="space-y-4 animate-fade-in">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-navy">Manage Notices</h2>
                   <Button
@@ -614,7 +614,7 @@ export default function AdminDashboard({
 
             {/* ====== EVENTS TAB ====== */}
             {activeTab === "events" && (
-              <div className="space-y-4 animate-fade-in">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-navy">Manage Events</h2>
                   <Button
@@ -744,7 +744,7 @@ export default function AdminDashboard({
 
             {/* ====== ANNOUNCEMENTS TAB ====== */}
             {activeTab === "announcements" && (
-              <div className="space-y-4 animate-fade-in">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-navy">Manage Announcements</h2>
                   <Button
@@ -851,7 +851,7 @@ export default function AdminDashboard({
 
             {/* ====== GALLERY TAB ====== */}
             {activeTab === "gallery" && (
-              <div className="space-y-4 animate-fade-in">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-navy">Manage Gallery Images</h2>
                   <Button
@@ -1033,7 +1033,7 @@ export default function AdminDashboard({
 
             {/* ====== ENQUIRIES TAB ====== */}
             {activeTab === "enquiries" && (
-              <div className="space-y-4 animate-fade-in">
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-navy">Enquiries</h2>
                   <div className="flex items-center gap-2">

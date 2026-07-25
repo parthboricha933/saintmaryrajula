@@ -3,6 +3,7 @@
 import { useInView } from "react-intersection-observer";
 import { SCHOOL } from "@/data/school-data";
 import { GraduationCap, Users, BookOpen, CheckCircle } from "lucide-react";
+import { motion } from "framer-motion";
 
 const stats = [
   { icon: Users, value: "500+", label: "Students" },
@@ -22,10 +23,11 @@ export default function AboutSection() {
       >
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           {/* Image side */}
-          <div
-            className={`relative ${
-              inView ? "animate-slide-in-left" : "opacity-0"
-            }`}
+          <motion.div
+            initial={{opacity:0,x:-30}}
+            animate={inView ? {opacity:1,x:0} : {opacity:0,x:-30}}
+            transition={{duration:0.6}}
+            className="relative"
           >
             <div className="relative rounded-2xl overflow-hidden shadow-xl">
               <img
@@ -51,13 +53,13 @@ export default function AboutSection() {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Content side */}
-          <div
-            className={`${
-              inView ? "animate-slide-in-right" : "opacity-0"
-            }`}
+          <motion.div
+            initial={{opacity:0,x:30}}
+            animate={inView ? {opacity:1,x:0} : {opacity:0,x:30}}
+            transition={{duration:0.6}}
           >
             <div className="inline-flex items-center gap-2 bg-gold/10 text-gold-dark rounded-full px-4 py-1.5 text-sm font-semibold mb-4">
               <span className="w-2 h-2 bg-gold rounded-full" />
@@ -91,7 +93,7 @@ export default function AboutSection() {
                 );
               })}
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>

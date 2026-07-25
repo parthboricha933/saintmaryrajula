@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { Camera, X, ChevronLeft, ChevronRight, ZoomIn, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -141,19 +142,19 @@ export default function GallerySection() {
           </div>
         ) : (
           /* Masonry grid */
-          <div className="masonry-grid">
+          <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4">
             {filteredImages.map((image, index) => {
               const hasError = erroredImages.has(image.id);
               const isLoaded = loadedImages.has(image.id);
               const bgColor = getCategoryColor(image.category);
 
               return (
-                <div
+                <motion.div
                   key={`${image.id}-${activeCategory}`}
-                  className={`masonry-item ${
-                    inView ? "animate-fade-in-up" : "opacity-0"
-                  }`}
-                  style={{ animationDelay: `${index * 0.05}s` }}
+                  className="break-inside-avoid mb-4"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                  transition={{ duration: 0.6, delay: index * 0.05 }}
                 >
                   <div
                     className="relative h-64 sm:h-72 rounded-xl overflow-hidden cursor-pointer group shadow-sm hover:shadow-lg transition-all duration-300"
@@ -199,7 +200,7 @@ export default function GallerySection() {
                       </div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
           </div>
@@ -215,7 +216,7 @@ export default function GallerySection() {
 
       {/* Lightbox */}
       {lightboxIndex !== null && filteredImages[lightboxIndex] && (
-        <div className="lightbox-overlay" onClick={closeLightbox}>
+        <motion.div className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }} onClick={closeLightbox}>
           <div
             className="relative max-w-4xl max-h-[85vh] mx-4"
             onClick={(e) => e.stopPropagation()}
@@ -269,7 +270,7 @@ export default function GallerySection() {
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
     </section>
   );

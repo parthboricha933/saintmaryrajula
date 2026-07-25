@@ -10,6 +10,7 @@ import {
   Camera,
   Leaf,
 } from "lucide-react";
+import { motion } from "framer-motion";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   BookOpen,
@@ -46,12 +47,12 @@ export default function FacilitiesSection() {
           {facilities.map((facility, index) => {
             const Icon = iconMap[facility.icon];
             return (
-              <div
+              <motion.div
                 key={facility.title}
-                className={`bg-white rounded-xl p-5 sm:p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-gold/20 transition-all duration-300 group flex items-start gap-4 ${
-                  inView ? "animate-fade-in-up" : "opacity-0"
-                }`}
-                style={{ animationDelay: `${index * 0.1}s` }}
+                initial={{opacity:0,y:20}}
+                animate={inView ? {opacity:1,y:0} : {opacity:0,y:20}}
+                transition={{duration:0.6,delay:index*0.1}}
+                className="bg-white rounded-xl p-5 sm:p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-gold/20 transition-all duration-300 group flex items-start gap-4"
               >
                 <div className="w-14 h-14 bg-gold/10 shrink-0 rounded-xl flex items-center justify-center group-hover:bg-gold/20 transition-colors">
                   {Icon && (
@@ -66,7 +67,7 @@ export default function FacilitiesSection() {
                     {facility.description}
                   </p>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
         </div>

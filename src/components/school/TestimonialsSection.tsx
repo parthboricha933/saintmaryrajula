@@ -1,6 +1,7 @@
 "use client";
 
 import { useInView } from "react-intersection-observer";
+import { motion } from "framer-motion";
 import { testimonials } from "@/data/school-data";
 import { Star, Quote } from "lucide-react";
 
@@ -29,12 +30,12 @@ export default function TestimonialsSection() {
         {/* Testimonials grid */}
         <div className="grid sm:grid-cols-2 gap-4 sm:gap-5 lg:gap-6">
           {testimonials.map((testimonial, index) => (
-            <div
+            <motion.div
               key={testimonial.id}
-              className={`bg-white rounded-xl p-5 sm:p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 relative ${
-                inView ? "animate-fade-in-up" : "opacity-0"
-              }`}
-              style={{ animationDelay: `${index * 0.15}s` }}
+              className="bg-white rounded-xl p-5 sm:p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 relative"
+              initial={{ opacity: 0, y: 20 }}
+              animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+              transition={{ duration: 0.6, delay: index * 0.1 }}
             >
               <Quote className="w-8 h-8 text-gold/20 absolute top-4 right-4" />
 
@@ -73,7 +74,7 @@ export default function TestimonialsSection() {
                   </p>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>

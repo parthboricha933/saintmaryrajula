@@ -15,6 +15,7 @@ import {
   User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
 
 type DBTeacher = {
   id: string;
@@ -58,11 +59,11 @@ function TeacherCard({
   onSelect: (t: DisplayTeacher) => void;
 }) {
   return (
-    <div
-      className={`bg-white rounded-xl p-5 sm:p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:border-gold/20 hover:-translate-y-1 transition-all duration-300 cursor-pointer group ${
-        inView ? "animate-fade-in-up" : "opacity-0"
-      }`}
-      style={{ animationDelay: `${index * 0.1}s` }}
+    <motion.div
+      initial={{opacity:0,y:20}}
+      animate={inView ? {opacity:1,y:0} : {opacity:0,y:20}}
+      transition={{duration:0.6,delay:index*0.1}}
+      className="bg-white rounded-xl p-5 sm:p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:border-gold/20 hover:-translate-y-1 transition-all duration-300 cursor-pointer group"
       onClick={() => onSelect(teacher)}
     >
       {/* Photo */}
@@ -102,7 +103,7 @@ function TeacherCard({
           </p>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -114,7 +115,7 @@ function TeacherProfile({
   onBack: () => void;
 }) {
   return (
-    <div className="animate-fade-in">
+    <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{duration:0.5}}>
       <div className="max-w-4xl mx-auto">
         <Button
           variant="ghost"
@@ -236,7 +237,7 @@ function TeacherProfile({
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

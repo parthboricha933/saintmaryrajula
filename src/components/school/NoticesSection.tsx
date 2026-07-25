@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useInView } from "react-intersection-observer";
 import { Bell, Calendar, ChevronRight, ArrowRight } from "lucide-react";
+import { motion } from "framer-motion";
 
 type Notice = {
   id: string;
@@ -64,12 +65,12 @@ export default function NoticesSection() {
         {/* Notices list */}
         <div className="max-w-3xl mx-auto space-y-4">
           {displayNotices.map((notice, index) => (
-            <div
+            <motion.div
               key={notice.id}
-              className={`bg-white rounded-xl p-5 sm:p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-gold/20 transition-all duration-300 group cursor-pointer ${
-                inView ? "animate-fade-in-up" : "opacity-0"
-              }`}
-              style={{ animationDelay: `${index * 0.15}s` }}
+              initial={{opacity:0,y:20}}
+              animate={inView ? {opacity:1,y:0} : {opacity:0,y:20}}
+              transition={{duration:0.6,delay:index*0.15}}
+              className="bg-white rounded-xl p-5 sm:p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-gold/20 transition-all duration-300 group cursor-pointer"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-4 flex-1">
@@ -100,7 +101,7 @@ export default function NoticesSection() {
                 </div>
                 <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-gold shrink-0 mt-1 transition-colors" />
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
 

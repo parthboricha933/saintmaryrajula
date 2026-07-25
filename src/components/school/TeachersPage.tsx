@@ -37,7 +37,7 @@ export default function TeachersPage({
           {teachers.map((teacher, index) => (
             <div
               key={teacher.id}
-              className="bg-white rounded-xl p-5 sm:p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:border-gold/20 hover:-translate-y-1 transition-all duration-300 cursor-pointer group animate-fade-in-up"
+              className="bg-white rounded-xl p-5 sm:p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:border-gold/20 hover:-translate-y-1 transition-all duration-300 cursor-pointer group-up"
               style={{ animationDelay: `${index * 0.08}s` }}
               onClick={() => onSelectTeacher(teacher.id)}
             >

@@ -8,6 +8,7 @@ import {
   GraduationCap,
   ShieldCheck,
 } from "lucide-react";
+import { motion } from "framer-motion";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   CalendarDays,
@@ -47,14 +48,12 @@ export default function QuickCards() {
           const Icon = iconMap[card.icon];
           const colors = colorMap[card.color] || colorMap.navy;
           return (
-            <div
+            <motion.div
               key={card.title}
-              className={`bg-white rounded-xl p-4 sm:p-5 lg:p-6 shadow-lg border ${colors.border} hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 ${
-                inView
-                  ? "animate-fade-in-up"
-                  : "opacity-0"
-              }`}
-              style={{ animationDelay: `${index * 0.1}s` }}
+              initial={{opacity:0,y:20}}
+              animate={inView ? {opacity:1,y:0} : {opacity:0,y:20}}
+              transition={{duration:0.6,delay:index*0.1}}
+              className={`bg-white rounded-xl p-4 sm:p-5 lg:p-6 shadow-lg border ${colors.border} hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300`}
             >
               <div
                 className={`w-10 h-10 sm:w-12 sm:h-12 ${colors.bg} rounded-lg flex items-center justify-center mb-3`}
@@ -67,7 +66,7 @@ export default function QuickCards() {
               <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                 {card.description}
               </p>
-            </div>
+            </motion.div>
           );
         })}
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useInView } from "react-intersection-observer";
+import { motion } from "framer-motion";
 import {
   GraduationCap,
   Baby,
@@ -49,10 +50,11 @@ export default function AdmissionsSection() {
         className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
       >
         {/* Section header */}
-        <div
-          className={`text-center mb-10 lg:mb-14 ${
-            inView ? "animate-fade-in-up" : "opacity-0"
-          }`}
+        <motion.div
+          className="text-center mb-10 lg:mb-14"
+          initial={{ opacity: 0, y: 20 }}
+          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.6 }}
         >
           <div className="inline-flex items-center gap-2 bg-gold/10 text-gold-dark rounded-full px-4 py-1.5 text-sm font-semibold mb-4">
             <GraduationCap className="w-3.5 h-3.5" />
@@ -64,14 +66,14 @@ export default function AdmissionsSection() {
           <p className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
             We welcome students from Play House through Standard 8. Give your child the best start with quality English-medium education in a nurturing environment.
           </p>
-        </div>
+        </motion.div>
 
         {/* Grade levels grid */}
-        <div
-          className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 mb-12 ${
-            inView ? "animate-fade-in-up" : "opacity-0"
-          }`}
-          style={{ animationDelay: "0.1s" }}
+        <motion.div
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 mb-12"
+          initial={{ opacity: 0, y: 20 }}
+          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
         >
           {gradeLevels.map((grade) => {
             const Icon = grade.icon;
@@ -92,14 +94,14 @@ export default function AdmissionsSection() {
               </div>
             );
           })}
-        </div>
+        </motion.div>
 
         {/* Admission requirements */}
-        <div
-          className={`bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden ${
-            inView ? "animate-fade-in-up" : "opacity-0"
-          }`}
-          style={{ animationDelay: "0.2s" }}
+        <motion.div
+          className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
+          initial={{ opacity: 0, y: 20 }}
+          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
         >
           <div className="bg-navy p-5 sm:p-6">
             <h3 className="text-lg sm:text-xl font-bold text-white mb-1">
@@ -151,7 +153,7 @@ export default function AdmissionsSection() {
               </Button>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );

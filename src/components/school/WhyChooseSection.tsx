@@ -1,6 +1,7 @@
 "use client";
 
 import { useInView } from "react-intersection-observer";
+import { motion } from "framer-motion";
 import { whyChooseCards } from "@/data/school-data";
 import {
   UserCheck,
@@ -47,12 +48,12 @@ export default function WhyChooseSection() {
           {whyChooseCards.map((card, index) => {
             const Icon = iconMap[card.icon];
             return (
-              <div
+              <motion.div
                 key={card.title}
-                className={`bg-white rounded-xl p-5 sm:p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-gold/20 hover:-translate-y-0.5 transition-all duration-300 group ${
-                  inView ? "animate-fade-in-up" : "opacity-0"
-                }`}
-                style={{ animationDelay: `${index * 0.1}s` }}
+                className="bg-white rounded-xl p-5 sm:p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-gold/20 hover:-translate-y-0.5 transition-all duration-300 group"
+                initial={{ opacity: 0, y: 20 }}
+                animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
               >
                 <div className="w-12 h-12 bg-navy/5 group-hover:bg-gold/10 rounded-xl flex items-center justify-center mb-4 transition-colors">
                   {Icon && (
@@ -65,7 +66,7 @@ export default function WhyChooseSection() {
                 <p className="text-muted-foreground text-sm leading-relaxed">
                   {card.description}
                 </p>
-              </div>
+              </motion.div>
             );
           })}
         </div>

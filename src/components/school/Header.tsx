@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { SCHOOL } from "@/data/school-data";
 import { Menu, X, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -159,7 +160,7 @@ export default function Header({ onNavigate, currentView }: HeaderProps) {
 
       {/* Mobile menu */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden bg-white border-t border-gray-100 shadow-lg animate-fade-in">
+        <motion.div className="lg:hidden bg-white border-t border-gray-100 shadow-lg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
           <div className="px-4 py-4 space-y-1">
             {navItems.map((item) => (
               <button
@@ -189,7 +190,7 @@ export default function Header({ onNavigate, currentView }: HeaderProps) {
               </Button>
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
     </header>
   );

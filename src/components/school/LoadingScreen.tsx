@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 
 export default function LoadingScreen() {
   const [progress, setProgress] = useState(0);
@@ -43,7 +44,7 @@ export default function LoadingScreen() {
       }`}
     >
       {/* Logo */}
-      <div className="mb-8 animate-fade-in">
+      <motion.div className="mb-8" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
         <div className="relative">
           <img
             src="/school-logo.png"
@@ -53,28 +54,28 @@ export default function LoadingScreen() {
           {/* Pulsing ring around logo */}
           <div className="absolute inset-0 w-24 h-24 sm:w-28 sm:h-28 rounded-full border-2 border-gold/30 animate-ping" />
         </div>
-      </div>
+      </motion.div>
 
       {/* School name */}
-      <h2 className="text-2xl sm:text-3xl font-bold text-navy mb-1 animate-fade-in-up">
+      <motion.h2 className="text-2xl sm:text-3xl font-bold text-navy mb-1" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
         Saint Mary School
-      </h2>
-      <p className="text-sm text-gold font-medium mb-8 animate-fade-in-up stagger-1">
+      </motion.h2>
+      <motion.p className="text-sm text-gold font-medium mb-8" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}>
         Rajula, Gujarat
-      </p>
+      </motion.p>
 
       {/* Loading bar */}
-      <div className="w-48 sm:w-64 h-1.5 bg-gray-100 rounded-full overflow-hidden animate-fade-in-up stagger-2">
+      <motion.div className="w-48 sm:w-64 h-1.5 bg-gray-100 rounded-full overflow-hidden" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}>
         <div
           className="h-full bg-gradient-to-r from-navy via-gold to-green-accent rounded-full transition-all duration-300 ease-out"
           style={{ width: `${progress}%` }}
         />
-      </div>
+      </motion.div>
 
       {/* Loading text */}
-      <p className="text-xs text-muted-foreground mt-4 animate-fade-in-up stagger-3">
+      <motion.p className="text-xs text-muted-foreground mt-4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}>
         {progress < 100 ? "Loading..." : "Welcome!"}
-      </p>
+      </motion.p>
     </div>
   );
 }

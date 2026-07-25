@@ -14,6 +14,7 @@ import {
   Mail,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
 
 export default function TeacherDetailPage({
   teacherId,
@@ -45,7 +46,7 @@ export default function TeacherDetailPage({
   }
 
   return (
-    <div className="pt-28 sm:pt-32 pb-16 lg:pb-24 bg-secondary/30 min-h-screen animate-fade-in">
+    <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{duration:0.5}} className="pt-28 sm:pt-32 pb-16 lg:pb-24 bg-secondary/30 min-h-screen">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <Button
           variant="ghost"
@@ -200,6 +201,6 @@ export default function TeacherDetailPage({
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
