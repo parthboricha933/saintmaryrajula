@@ -11,9 +11,19 @@ const messages = [
 
 export default function MarqueeBar() {
   return (
-    <div className="bg-gold text-white overflow-hidden whitespace-nowrap">
-      <div className="animate-marquee inline-flex">
-        {[...messages, ...messages].map((msg, i) => (
+    <div className="bg-gold text-white overflow-hidden whitespace-nowrap w-full">
+      <style>{`
+        @keyframes marquee-scroll {
+          0% { transform: translateX(100%); }
+          100% { transform: translateX(-100%); }
+        }
+        .marquee-inner {
+          display: inline-block;
+          animation: marquee-scroll 25s linear infinite;
+        }
+      `}</style>
+      <div className="marquee-inner">
+        {messages.map((msg, i) => (
           <span
             key={i}
             className="inline-block px-8 py-2 text-sm font-semibold tracking-wide"
