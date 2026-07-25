@@ -90,6 +90,34 @@ export default function Header({ onNavigate, currentView }: HeaderProps) {
         </div>
       </div>
 
+      {/* Scrolling marquee ticker */}
+      <div className="bg-gold text-white overflow-hidden whitespace-nowrap w-full">
+        <style>{`
+          @keyframes marquee-scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
+          .marquee-inner {
+            display: inline-block;
+            animation: marquee-scroll 20s linear infinite;
+          }
+        `}</style>
+        <div className="marquee-inner">
+          <span className="inline-block px-6 py-1.5 text-xs font-semibold tracking-wide">Admissions Open for 2025-26!<span className="mx-3 opacity-60">|</span></span>
+          <span className="inline-block px-6 py-1.5 text-xs font-semibold tracking-wide">GSEB Affiliated | Nursery to Class 8<span className="mx-3 opacity-60">|</span></span>
+          <span className="inline-block px-6 py-1.5 text-xs font-semibold tracking-wide">Safe & Nurturing Campus<span className="mx-3 opacity-60">|</span></span>
+          <span className="inline-block px-6 py-1.5 text-xs font-semibold tracking-wide">Experienced & Dedicated Faculty<span className="mx-3 opacity-60">|</span></span>
+          <span className="inline-block px-6 py-1.5 text-xs font-semibold tracking-wide">Enroll Now - Limited Seats!<span className="mx-3 opacity-60">|</span></span>
+          <span className="inline-block px-6 py-1.5 text-xs font-semibold tracking-wide">Contact: saintmaryrajula@gmail.com<span className="mx-3 opacity-60">|</span></span>
+          <span className="inline-block px-6 py-1.5 text-xs font-semibold tracking-wide">Admissions Open for 2025-26!<span className="mx-3 opacity-60">|</span></span>
+          <span className="inline-block px-6 py-1.5 text-xs font-semibold tracking-wide">GSEB Affiliated | Nursery to Class 8<span className="mx-3 opacity-60">|</span></span>
+          <span className="inline-block px-6 py-1.5 text-xs font-semibold tracking-wide">Safe & Nurturing Campus<span className="mx-3 opacity-60">|</span></span>
+          <span className="inline-block px-6 py-1.5 text-xs font-semibold tracking-wide">Experienced & Dedicated Faculty<span className="mx-3 opacity-60">|</span></span>
+          <span className="inline-block px-6 py-1.5 text-xs font-semibold tracking-wide">Enroll Now - Limited Seats!<span className="mx-3 opacity-60">|</span></span>
+          <span className="inline-block px-6 py-1.5 text-xs font-semibold tracking-wide">Contact: saintmaryrajula@gmail.com<span className="mx-3 opacity-60">|</span></span>
+        </div>
+      </div>
+
       {/* Main nav */}
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 lg:h-20">
