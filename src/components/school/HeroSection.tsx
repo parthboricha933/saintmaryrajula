@@ -17,11 +17,11 @@ export default function HeroSection() {
           backgroundImage: "url('/hero-school.jpg')",
         }}
       />
-      <div className="absolute inset-0 bg-gradient-to-r from-navy-dark/90 via-navy/80 to-navy-dark/70" />
+      <div className="absolute inset-0 bg-gradient-to-r from-navy-dark/55 via-navy/45 to-navy-dark/35" />
 
       {/* Decorative elements */}
-      <div className="absolute top-20 right-10 w-64 h-64 bg-gold/5 rounded-full blur-3xl" />
-      <div className="absolute bottom-20 left-10 w-48 h-48 bg-gold/5 rounded-full blur-3xl" />
+      <div className="absolute top-20 right-10 w-64 h-64 bg-gold/20 rounded-full blur-3xl" />
+      <div className="absolute bottom-20 left-10 w-48 h-48 bg-gold/20 rounded-full blur-3xl" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 pt-32 lg:pt-36">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">

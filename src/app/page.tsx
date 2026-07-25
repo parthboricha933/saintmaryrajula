@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Header from "@/components/school/Header";
 import Footer from "@/components/school/Footer";
 import HeroSection from "@/components/school/HeroSection";
+import MarqueeBar from "@/components/school/MarqueeBar";
 import QuickCards from "@/components/school/QuickCards";
 import AboutSection from "@/components/school/AboutSection";
 import AdmissionsSection from "@/components/school/AdmissionsSection";
@@ -105,6 +106,7 @@ export default function Home() {
     <>
       <LoadingScreen />
       <div className="min-h-screen flex flex-col bg-white">
+        <MarqueeBar />
         <Header onNavigate={handleNavigate} currentView={currentView} />
         <main className="flex-1">
           {currentView === "home" && (
